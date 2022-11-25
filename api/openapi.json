@@ -1,0 +1,149 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "MMT-RecSys Semesterprojekt",
+    "description": "Here you find the endpoint specification in order to evaluation all projects on the same conditions. Please feel free to use additional endpoints for your front-end application.",
+    "contact": {
+      "email": "nw@cognify.ai"
+    },
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://yoururl.swagger.io/v2"
+    }
+  ],
+  "paths": {
+    "/recommendItems": {
+      "get": {
+        "tags": [
+          "recommendItems"
+        ],
+        "summary": "Request item recommendation based on user attributes or ID",
+        "operationId": "recommendItems",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "query",
+            "description": "userID included in data set",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "age",
+            "in": "query",
+            "description": "age of an user (should be a positive value)",
+            "required": true,
+            "schema": {
+              "maximum": 100,
+              "minimum": 0,
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "locationCountry",
+            "in": "query",
+            "description": "country of origin",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locationState",
+            "in": "query",
+            "description": "national state of origin",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locationCity",
+            "in": "query",
+            "description": "city of origin",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "itemId",
+            "in": "query",
+            "description": "itemID included in data set",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "numberOfItems",
+            "in": "query",
+            "description": "defines how many item recommendations are returned",
+            "required": false,
+            "schema": {
+              "default": 10,
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/recommendItems"
+                  }
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/recommendItems"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "recommendItems": {
+        "type": "object",
+        "properties": {
+          "itemIds": {
+            "type": "array",
+            "items": {
+              "format": "int64",
+              "type": "integer"
+            },
+            "example": [
+              234,
+              2532,
+              1235
+            ]
+          }
+        },
+        "xml": {
+          "name": "itemRecommendations"
+        }
+      }
+    }
+  }
+}
