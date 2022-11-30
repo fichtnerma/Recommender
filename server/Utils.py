@@ -1,60 +1,45 @@
 import pandas as pd
+import numpy as np
 from collections import defaultdict
 
 
-def book_parser(path):
+def get_books(path):
+    books = pd.read_csv(path, sep=";", encoding="latin-1")
+    books.columns = books.columns.map(prepare_string)
+    books.year_of_publication = pd.to_numeric(books.year_of_publication, errors='coerce')
+    # Replace years equal to 0 with NaN
+    books.year_of_publication.replace(0, np.nan, inplace=True)
 
-    df = pd.read_csv(path, sep=";", encoding="latin-1", quotechar='"', skipinitialspace=True,)
-
-    books = defaultdict(list)
-
-    for row in df.itertuples():
-
-        isbn = getattr(row, "ISBN")
-        book_info = {
-            "title": getattr(row, "Book-Title"),
-            "author": getattr(row, "Book-Author"),
-            "year": getattr(row, "Year-Of-Publication"),
-            "publisher": getattr(row, "Publisher"),
-            "image_s": getattr(row, "Image-URL-S"),
-            "image_m": getattr(row, "Image-URL-M"),
-            "image_l": getattr(row, "Image-URL-L")
-        }
-
-        books[isbn].append(book_info)
-    
     return books
 
     
     
-def user_parser(path, raw_data=False):
-    df = pd.read_csv(path, sep=";", encoding="latin-1")
-    users = defaultdict(list)
+def get_users(path):
+    users = pd.read_csv(path, sep=";", encoding="latin-1")
+    # cleaned column names
+    users.columns = users.columns.map(prepare_string)
+    # replaced ages below 6 and above 110 with NaN
+    users.loc[(users.age<6) | (users.age>110), 'age'] = np.nan
+    # seperate location into city, state and country
+    location_seperated = users.location.str.split(',', 2, expand=True)
+    location_seperated.columns = ['city', 'state', 'country']
+    users = users.join(location_seperated)
+    users.drop(columns=['location'], inplace=True)
+    # replaced empty strings with NaN
+    users.country.replace('', np.nan, inplace=True)
+    users.state.replace('', np.nan, inplace=True)
+    users.city.replace('', np.nan, inplace=True)
 
-    for row in df.itertuples():
-        user_id = getattr(row, "Index")
-        user_info = {
-            "location": getattr(row, "Location"),
-            "age": getattr(row, "Age")
-        }
-
-        users[user_id].append(user_info)
-    if (raw_data):
-        return df
     return users
 
 
 
-def rating_parser(path):
-    df = pd.read_csv(path, sep=";", encoding="latin-1")
-    book_ratings = defaultdict(list)
-    user_ratings = defaultdict(list)
-    for row in df.iterrows():
-        print(row)
-        # isbn = getattr(row, "ISBN")
-        # rating = getattr(row, "Book-Rating")
-        # user_id = getattr(row, "User-ID")
-        # book_ratings[isbn].append(rating)
-        # user_ratings[user_id].append(rating)
+def get_ratings(path):
+    ratings = pd.read_csv(path, sep=";", encoding="latin-1")
+    ratings.columns = ratings.columns.map(prepare_string)
     
-    return book_ratings, user_ratings
+    return ratings
+
+def prepare_string(string):
+    return str(string).strip().lower().replace('-', '_')
+
