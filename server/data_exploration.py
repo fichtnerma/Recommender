@@ -1,8 +1,8 @@
 from Utils import get_books, get_users, get_ratings
 
-books = get_books("./data/BX-Books.csv")
-users = get_users("./data/BX-Users.csv")
-ratings = get_ratings("./data/BX-Book-Ratings.csv")
+books = get_books("../data/BX-Books.csv")
+users = get_users("../data/BX-Users.csv")
+ratings = get_ratings("../data/BX-Book-Ratings.csv")
 print(books)
 
 super_users = ratings.groupby('user_id').isbn.count().sort_values(ascending=False)
