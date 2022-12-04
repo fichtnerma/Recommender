@@ -1,0 +1,15 @@
+.bookItem {
+    img {
+        width: 80%;
+    }
+}
+.bookRow {
+    display: flex;
+    flex-direction: row;
+    color: #000;
+    justify-content: space-between;
+    margin: 10px;
+    .bookItem {
+        width: 30%;
+    }
+}
