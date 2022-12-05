@@ -1,0 +1,30 @@
+.stars {
+    position: relative;
+    width: fit-content;
+    height: 30px;
+    white-space: nowrap;
+    svg {
+      width: 25px;
+    }
+  }
+  
+  .cover {
+    background: white;
+    height: 100%;
+    overflow: hidden;
+    mix-blend-mode: color;
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+  
+  svg {
+    fill: gold;
+  }
+  .rating {
+    position: relative;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }

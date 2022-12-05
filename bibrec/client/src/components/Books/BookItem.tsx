@@ -1,5 +1,6 @@
 import React from 'react'
 import "./Books.scss"
+import Rating from './Rating'
 
 interface Book {
     title: string,
@@ -14,7 +15,7 @@ export default function BookItem({title, imageURL, author, rating} : Book) {
         <img src={imageURL} alt="book cover"/>
         <h3>{title}</h3>
         <p>{author}</p>
-        <p>{rating}</p>
+        <Rating rating={+rating}/>
     </div>
   )
 }
