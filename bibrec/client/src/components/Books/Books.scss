@@ -1,15 +1,23 @@
-.bookItem {
-    img {
-        width: 80%;
-    }
-}
 .bookRow {
-    display: flex;
-    flex-direction: row;
-    color: #000;
-    justify-content: space-between;
-    margin: 10px;
-    .bookItem {
-        width: 30%;
-    }
+	width: 100%;
+	display: inline-flex;
+	gap: 4%;
+	flex-direction: row;
+	color: #000;
+	margin-bottom: 1rem;
+
+	.bookItem {
+		width: 20%;
+
+		cursor: pointer;
+
+		img {
+			border: 2px solid black;
+			width: 100%;
+		}
+
+		.bookTitle {
+			margin: 0;
+		}
+	}
 }
