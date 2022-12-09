@@ -3,13 +3,23 @@ from Utils import get_books, get_users, get_ratings
 books = get_books("../../data/BX-Books.csv")
 users = get_users("../../data/BX-Users.csv")
 ratings = get_ratings("../../data/BX-Book-Ratings.csv")
-print(books)
+print(books.isbn13)
 
 super_users = ratings.groupby('user_id').isbn.count().sort_values(ascending=False)
 
 print(ratings)
 implicit_ratings = ratings[ratings.book_rating == 0]
 explicit_ratings = ratings[ratings.book_rating != 0]
+
+# filtern von ratings, die nicht in books sind
+print(implicit_ratings.count())
+implicit_filtered_ratings = implicit_ratings[implicit_ratings.isbn.isin(books.isbn)]
+print(implicit_filtered_ratings.count())
+
+print(explicit_ratings.count())
+explicit_filtered_ratings = explicit_ratings[explicit_ratings.isbn.isin(books.isbn)]
+print(explicit_filtered_ratings.count())
+
 
 def get_most_rated_books(books, ratings, n=10):
     most_rated_books = ratings.groupby('isbn').user_id.count().sort_values(ascending=False)

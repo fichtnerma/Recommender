@@ -10,6 +10,8 @@ def get_books(path):
     # Replace years equal to 0 with NaN
     books.year_of_publication.replace(0, np.nan, inplace=True)
     books.fillna(round(books.year_of_publication.mean()))
+    books["isbn13"] = books.isbn.map(convert_isbn)
+    books = books[books.isbn13.notna()]
 
     return books
 
@@ -44,8 +46,34 @@ def get_users(path):
 def get_ratings(path):
     ratings = pd.read_csv(path, sep=";", encoding="latin-1")
     ratings.columns = ratings.columns.map(prepare_string)
+    ratings["isbn"] = ratings.isbn.map(convert_isbn)
     
     return ratings
 
 def prepare_string(string):
     return str(string).strip().lower().replace('-', '_')
+
+def convert_isbn(id):
+    isbn = str(id)
+    if len(isbn) == 10:
+        isbn = isbn.rstrip(isbn[-1])
+        isbn = "978" + isbn
+        sum = 0
+        for i in range(len(isbn)):
+            try:
+                int(isbn[i])
+            except ValueError:
+                return np.nan
+            if i % 2 == 0:
+                sum += int(isbn[i])
+            else:
+                sum += int(isbn[i]) * 3
+        check_digit = 10 - (sum % 10)
+        if check_digit == 10:
+            check_digit = 0
+        isbn += str(check_digit)
+        return isbn
+    elif len(isbn) == 13:
+        return isbn
+    else:
+        return np.nan
