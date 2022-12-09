@@ -9,6 +9,9 @@ def get_books(path):
     books.year_of_publication = pd.to_numeric(books.year_of_publication, errors='coerce')
     # Replace years equal to 0 with NaN
     books.year_of_publication.replace(0, np.nan, inplace=True)
+    # Replace years above 2005 with NaN (dataset was released in 2005)
+    books.loc[books.year_of_publication > 2005, 'year_of_publication'] = np.nan
+    # Replace NaN years with mean of all years
     books.fillna(round(books.year_of_publication.mean()))
     books["isbn13"] = books.isbn.map(convert_isbn)
     books = books[books.isbn13.notna()]
@@ -23,12 +26,14 @@ def get_users(path):
     users.columns = users.columns.map(prepare_string)
     # replaced ages below 6 and above 110 with NaN
     users.loc[(users.age<6) | (users.age>110), 'age'] = np.nan
+    print("With NaN values",users.age.mean())
     # replaced NaN ages with random ages from normal distribution
     temp_age_series = pd.Series(np.random.normal(loc=users.age.mean(), scale=users.age.std(), size=users.user_id[users.age.isna()].count()))
     pos_age_series=np.abs(temp_age_series)
     users = users.sort_values('age',na_position='first').reset_index(drop=True)
     users.age.fillna(pos_age_series, inplace = True)  
     users = users.sort_values('user_id').reset_index(drop=True)
+    print("used mean values",users.age.mean())
     # seperate location into city, state and country
     location_seperated = users.location.str.split(',', 2, expand=True)
     location_seperated.columns = ['city', 'state', 'country']
@@ -47,6 +52,8 @@ def get_ratings(path):
     ratings = pd.read_csv(path, sep=";", encoding="latin-1")
     ratings.columns = ratings.columns.map(prepare_string)
     ratings["isbn"] = ratings.isbn.map(convert_isbn)
+    ratings = ratings[ratings.isbn.notna()]
+
     
     return ratings
 
