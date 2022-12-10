@@ -51,8 +51,8 @@ def get_users(path):
 def get_ratings(path):
     ratings = pd.read_csv(path, sep=";", encoding="latin-1")
     ratings.columns = ratings.columns.map(prepare_string)
-    ratings["isbn"] = ratings.isbn.map(convert_isbn)
-    ratings = ratings[ratings.isbn.notna()]
+    ratings["isbn13"] = ratings.isbn.map(convert_isbn)
+    ratings = ratings[ratings.isbn13.notna()]
 
     
     return ratings
