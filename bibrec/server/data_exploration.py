@@ -42,3 +42,14 @@ def get_highest_rated_books(books, ratings, n=10):
     highest_rated_books = highest_rated_books.merge(books, on='isbn')
     return highest_rated_books
 
+def get_lowest_rated_books(books, ratings, n=10):
+    lowest_rated_books = ratings.groupby('isbn').book_rating.mean().sort_values(ascending=True)
+    lowest_rated_books = lowest_rated_books[:n]
+    lowest_rated_books = lowest_rated_books.reset_index()
+    lowest_rated_books = lowest_rated_books.merge(books, on='isbn')
+    return lowest_rated_books
+
+# get highest rated books in your country 
+def get_highest_rated_books_in_country(books, ratings, country, n=10):
+    get_highest_rated_books(books, ratings, n=100)
+
