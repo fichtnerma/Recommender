@@ -13,7 +13,8 @@ def get_precision(top_n_user_pred, threshold=5):
                                for est_r in top_n_user_pred["est_r"])
 
     true_positive = sum((est_r >= threshold and rating >= threshold) for rating,
-                        est_r in zip(top_n_user_pred["rating"], top_n_user_pred["est_r"]))
+                                                                         est_r in
+                        zip(top_n_user_pred["rating"], top_n_user_pred["est_r"]))
 
     return true_positive / recommendation_count if recommendation_count != 0 else 0
 
@@ -30,11 +31,12 @@ def get_recall(top_n_user_pred, user_predictions, threshold=5):
                 float: Recall for user predictions
         """
 
-    relevant_items_count = sum((est_r >= threshold)
-                               for est_r in user_predictions["est_r"])
+    relevant_items_count = sum((rating >= threshold)
+                               for rating in user_predictions["rating"])
 
     true_positive = sum((est_r >= threshold and rating >= threshold) for rating,
-                        est_r in zip(top_n_user_pred["rating"], top_n_user_pred["est_r"]))
+                                                                         est_r in
+                        zip(top_n_user_pred["rating"], top_n_user_pred["est_r"]))
 
     return true_positive / relevant_items_count if relevant_items_count != 0 else 0
 
@@ -52,21 +54,16 @@ def get_avg_precision(all_ratings, predictions, k=10, threshold=5):
                 float: Average precision for the provided predictions over all users with ratings
         """
 
-    # print(predictions)
-    sum = 0
-    for uid, pop_items in predictions.items():
-        #print("Uid", uid)
-        print("Popular items", pop_items)
+    precision_sum = 0
+    for uid, pred_items in predictions.items():
         user_ratings = all_ratings[all_ratings["userId"] == uid]
-
-        top_k_user_pred = pop_items[:k]
-
+        top_k_user_pred = pred_items[:k]
         merged = top_k_user_pred.merge(user_ratings, on="itemId", how="left")
 
         precision = get_precision(merged, threshold=threshold)
-        sum += precision
+        precision_sum += precision
 
-    return sum / len(predictions.items())
+    return precision_sum / len(predictions.items())
 
 
 def get_avg_recall(all_ratings, predictions, k=10, threshold=3.5):
@@ -82,13 +79,21 @@ def get_avg_recall(all_ratings, predictions, k=10, threshold=3.5):
                 float: Average recall for the provided predictions over all users with ratings
         """
 
-    sum = 0
-    for uid, pop_items in predictions.items():
+    recall_sum = 0
+    for idx, (uid, pred_items) in enumerate(predictions.items()):
         user_ratings = all_ratings[all_ratings["userId"] == uid]
-        top_k_user_pred = pop_items[:k]
+        # merged_items = pred_items.merge(user_ratings, on="itemId", how="left")
+        # merged_items = merged_items.sort_values("est_r", ascending=False)
+        # top_k_user_pred = merged_items[:k]
+
+        # print("Index:", idx)
+        # print("Uid:", uid)
+        # print("User Ratings:", len(user_ratings))
+
+        top_k_user_pred = pred_items[:k]
         merged = top_k_user_pred.merge(user_ratings, on="itemId", how="left")
 
-        recall = get_recall(merged, pop_items, threshold=threshold)
-        sum += recall
+        recall = get_recall(merged, user_ratings, threshold=threshold)
+        recall_sum += recall
 
-    return sum / len(predictions.items())
+    return recall_sum / len(predictions.items())
