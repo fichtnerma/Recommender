@@ -1,23 +1,81 @@
 .detailModal {
 	width: 60%;
 	min-width: 1000px;
-	min-height: 100vh;
+	height: 100vh;
 	border: 2px solid #000;
-	padding: 2rem;
 	background-color: #fff;
 	color: #000;
 	display: flex;
 	flex-direction: column;
-	justify-content: center;
 	align-items: center;
-	border-radius: var(--border-radius);
+	padding: 3rem;
+	overflow-y: scroll;
+	-ms-overflow-style: none;
+	scrollbar-width: none;
+
+	&::-webkit-scrollbar {
+		display: none;
+	}
+
+	.closeIcon {
+		align-self: flex-end;
+		cursor: pointer;
+		position: fixed;
+
+		&:after {
+			display: inline-block;
+			content: "\00d7";
+			font-size: 5rem;
+			line-height: 50px;
+		}
+	}
 
 	.bookDetails {
-		max-width: 400px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
 		min-width: unset !important;
-		
-		img {
+		width: 100%;
+
+		.imageWrapper {
+			max-width: 300px;
+
+			img {
+				width: 100%;
+				border: 2px solid black;
+			}
+
+			span {
+				color: gray;
+			}
+		}
+
+		.detailContent {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			padding: 0 2rem;
 			width: 100%;
+
+			h2 {
+				font-size: 2.5rem;
+				margin-bottom: 0;
+				text-align: center;
+			}
+
+			h3 {
+				font-size: 1.5rem;
+				font-weight: unset;
+				color: gray;
+			}
+
+			p {
+				text-align: justify;
+			}
+		}
+
+		.ratingCTA {
+			width: 50%;
 		}
 	}
 }

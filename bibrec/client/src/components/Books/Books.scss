@@ -7,13 +7,13 @@
 	margin-bottom: 1rem;
 
 	.bookItem {
-		width: 20%;
-
 		cursor: pointer;
 
 		img {
 			border: 2px solid black;
 			width: 100%;
+			aspect-ratio: 1 / 1.5;
+			object-fit: cover;
 		}
 
 		.bookTitle {
