@@ -2,9 +2,8 @@ import pandas as pd
 import numpy as np
 from collections import defaultdict
 
-
-def get_books(path):
-    books = pd.read_csv(path, sep=";", encoding="latin-1")
+def get_books():
+    books = pd.read_csv("../../data/BX-Books.csv", sep=";", encoding="latin-1")
     books.columns = books.columns.map(prepare_string)
     books.year_of_publication = pd.to_numeric(books.year_of_publication, errors='coerce')
     # Replace years equal to 0 with NaN
@@ -20,8 +19,8 @@ def get_books(path):
 
     
     
-def get_users(path):
-    users = pd.read_csv(path, sep=";", encoding="latin-1")
+def get_users():
+    users = pd.read_csv("../../data/BX-Users.csv", sep=";", encoding="latin-1")
     # cleaned column names
     users.columns = users.columns.map(prepare_string)
     # replaced ages below 6 and above 110 with NaN
@@ -48,8 +47,8 @@ def get_users(path):
 
 
 
-def get_ratings(path):
-    ratings = pd.read_csv(path, sep=";", encoding="latin-1")
+def get_ratings():
+    ratings = pd.read_csv("../../data/BX-Book-Ratings.csv", sep=";", encoding="latin-1")
     ratings.columns = ratings.columns.map(prepare_string)
     ratings["isbn13"] = ratings.isbn.map(convert_isbn)
     ratings = ratings[ratings.isbn13.notna()]
