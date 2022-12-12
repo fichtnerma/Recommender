@@ -2,8 +2,8 @@ import pandas as pd
 import numpy as np
 from collections import defaultdict
 
-def get_books():
-    books = pd.read_csv("../../data/BX-Books.csv", sep=";", encoding="latin-1")
+def get_books(path = "../../data/BX-Books.csv"):
+    books = pd.read_csv(path, sep=";", encoding="latin-1")
     books.columns = books.columns.map(prepare_string)
     books.year_of_publication = pd.to_numeric(books.year_of_publication, errors='coerce')
     # Replace years equal to 0 with NaN
@@ -17,10 +17,10 @@ def get_books():
 
     return books
 
-    
-    
-def get_users():
-    users = pd.read_csv("../../data/BX-Users.csv", sep=";", encoding="latin-1")
+
+
+def get_users(path = "../../data/BX-Users.csv"):
+    users = pd.read_csv(path, sep=";", encoding="latin-1")
     # cleaned column names
     users.columns = users.columns.map(prepare_string)
     # replaced ages below 6 and above 110 with NaN
@@ -30,7 +30,7 @@ def get_users():
     temp_age_series = pd.Series(np.random.normal(loc=users.age.mean(), scale=users.age.std(), size=users.user_id[users.age.isna()].count()))
     pos_age_series=np.abs(temp_age_series)
     users = users.sort_values('age',na_position='first').reset_index(drop=True)
-    users.age.fillna(pos_age_series, inplace = True)  
+    users.age.fillna(pos_age_series, inplace = True)
     users = users.sort_values('user_id').reset_index(drop=True)
     print("used mean values",users.age.mean())
     # seperate location into city, state and country
@@ -46,14 +46,13 @@ def get_users():
     return users
 
 
-
-def get_ratings():
-    ratings = pd.read_csv("../../data/BX-Book-Ratings.csv", sep=";", encoding="latin-1")
+def get_ratings(path = "../../data/BX-Book-Ratings.csv"):
+    ratings = pd.read_csv(path, sep=";", encoding="latin-1")
     ratings.columns = ratings.columns.map(prepare_string)
     ratings["isbn13"] = ratings.isbn.map(convert_isbn)
     ratings = ratings[ratings.isbn13.notna()]
 
-    
+
     return ratings
 
 def prepare_string(string):
