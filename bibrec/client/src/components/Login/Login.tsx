@@ -1,26 +1,38 @@
-import React, { useState } from "react";
-import { User } from "../../App";
+import React, { Dispatch, SetStateAction, useState } from "react";
+import { User, UserInfo } from "../../App";
 import "./Login.scss";
 
 interface LoginProps {
-	setUser: (user: User) => void;
+	setUser: Dispatch<SetStateAction<User>> ;
 	close: () => void;
 }
+
 export default function Login(props: LoginProps) {
 	const { close, setUser } = props;
 
 	const [userName, setUserName] = useState("");
+	const [userInfo, setUserInfo] = useState<UserInfo | undefined>(undefined);
 	const [part, setPart] = useState(1);
 
-	function nextPart(evt: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
-		setUser({ id: 1, username: userName });
+	function nextPart() {
+		const user: User = {
+			id: new Date().getTime(),
+			username: userName
+		};
+		setUser(user);
 		setPart(2);
 	}
+
+	function onFormSubmit() {
+		userInfo && setUser((prevUser) => ({ ...prevUser, ...userInfo }));
+		close();
+	}
+
 	return (
 		<div className="login">
 			{part == 1 ? (
 				<div className="part1">
-					<img src="/logo.png" width={120} alt="logo" />
+					<img src="/logo.png" width={120} alt="logo"/>
 					<h2>BibRec</h2>
 					<p>Bitte gib deinen Benutzernamen ein:</p>
 					<input
@@ -39,8 +51,12 @@ export default function Login(props: LoginProps) {
 							Überspringen
 						</button>
 						<button
+							disabled={!userName}
+							aria-disabled={!userName}
 							className="col next"
-							onClick={nextPart}
+							onClick={() => {
+								userName ? nextPart() : alert("Bitte gib einen Benutzernamen ein!");
+							}}
 							type="button"
 						>
 							Weiter
@@ -62,7 +78,7 @@ export default function Login(props: LoginProps) {
 							type="select"
 							name="country"
 							placeholder="Gib das Land in dem du wohnst ein"
-							onChange={(e) => set}
+							onChange={(e) => setUserInfo({ ...userInfo, country: e.target.value })}
 						/>
 
 						<label className="inputLabel" htmlFor="state">
@@ -73,6 +89,7 @@ export default function Login(props: LoginProps) {
 							type="select"
 							name="state"
 							placeholder="Gib das Bundesland in dem du wohnst ein"
+							onChange={(e) => setUserInfo({ ...userInfo, state: e.target.value })}
 						/>
 
 						<label className="inputLabel" htmlFor="city">
@@ -83,6 +100,7 @@ export default function Login(props: LoginProps) {
 							type="select"
 							name="city"
 							placeholder="Gib die Stadt in der du wohnst ein"
+							onChange={(e) => setUserInfo({ ...userInfo, city: e.target.value })}
 						/>
 
 						<label className="inputLabel" htmlFor="age">
@@ -93,6 +111,7 @@ export default function Login(props: LoginProps) {
 							type="text"
 							name="age"
 							placeholder="Gib dein Alter ein"
+							onChange={(e) => setUserInfo({ ...userInfo, age: Number(e.target.value) })}
 						/>
 					</div>
 					<div className="row">
@@ -105,8 +124,8 @@ export default function Login(props: LoginProps) {
 						</button>
 						<button
 							className="col next"
-							onClick={close}
-							type="submit"
+							onClick={onFormSubmit}
+							type="button"
 						>
 							Weiter
 						</button>

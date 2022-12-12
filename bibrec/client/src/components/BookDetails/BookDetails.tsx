@@ -4,19 +4,21 @@ import Rating from "../Books/Rating";
 import "./BookDetails.scss";
 import BookRow from "../Books/BookRow";
 import { dummyBooks } from "../Books/mockData";
+import { User } from "../../App";
 
 interface BookDetailsProps {
 	selectedBook: Book;
+	user?: User;
 }
 
-export default function BookDetails({ selectedBook }: BookDetailsProps) {
+export default function BookDetails({ selectedBook, user }: BookDetailsProps) {
 	const { imageURL, author, rating, title } = selectedBook;
 
 	return (
 		<div className="bookDetails">
 			<div className={"imageWrapper"}>
 				<img src={imageURL} alt={`The cover for the book „${title}“`}/>
-				<Rating rating={+rating}/>
+				<Rating rating={+rating} book={selectedBook}/>
 				<span>123 Bewertungen</span>
 			</div>
 			<div className={"detailContent"}><h2>{title}</h2>
@@ -30,10 +32,10 @@ export default function BookDetails({ selectedBook }: BookDetailsProps) {
 					voluptatem amet. Quod.
 				</p>
 			</div>
-			<div className="ratingCTA">
+			{!!user ? <div className="ratingCTA">
 				<h3>Jetzt bewerten</h3>
-				<Rating rating={0}/>
-			</div>
+				<Rating user={user} rating={0} book={selectedBook} canRate={true}/>
+			</div> : null}
 			<div>
 				<h2>Diese Bücher könnten dir auch gefallen</h2>
 				<BookRow books={dummyBooks} onItemClick={() => console.log("item clicked")}/>

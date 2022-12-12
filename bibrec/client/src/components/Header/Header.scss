@@ -1,7 +1,7 @@
 .header {
 	background-color: #fff;
 	border-bottom: 1px solid #e6e6e6;
-	box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.1);
+	box-shadow: 0 5px 10px 0 rgba(0, 0, 0, 0.1);
 	height: var(--header-height);
 	position: fixed;
 	top: 0;
@@ -20,12 +20,24 @@
 		place-items: center;
 		margin-left: 1.5rem;
 	}
+
+	.userManagement {
+		margin-left: auto;
+		display: flex;
+		align-items: center;
+	}
+
 	img {
 		height: 80%;
 	}
 
 	h1 {
 		margin: 0;
+	}
+
+	button {
+		margin-right: 1.5rem;
+		justify-self: flex-end;
 	}
 
 	nav {
@@ -49,9 +61,7 @@
 	}
 
 	p {
-		margin: 0;
-		margin-left: auto;
-		margin-right: 2rem;
+		margin: 0 1rem 0 0;
 		font-size: 1.5rem;
 	}
 }

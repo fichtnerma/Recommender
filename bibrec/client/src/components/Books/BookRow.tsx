@@ -1,7 +1,6 @@
 import React from "react";
 import BookItem, { Book } from "./BookItem";
 import "./Books.scss";
-import { dummyBooks2 } from "./mockData";
 
 interface BookRowProps {
 	books: Book[];
@@ -14,10 +13,7 @@ export default function BookRow({ onItemClick, books }: BookRowProps) {
 			{books.map((book, index) => (
 				<BookItem
 					key={index}
-					title={book.title}
-					imageURL={book.imageURL}
-					rating={book.rating}
-					author={book.author}
+					book={book}
 					onItemClick={() => onItemClick(book)}
 				/>
 			))}

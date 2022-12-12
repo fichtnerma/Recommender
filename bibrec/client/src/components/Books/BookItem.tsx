@@ -4,6 +4,7 @@ import Rating from "./Rating";
 
 interface BookItemProps {
 	onItemClick: (value: boolean) => void;
+	book: Book;
 }
 
 export interface Book {
@@ -13,17 +14,13 @@ export interface Book {
 	rating: number;
 }
 
-export default function BookItem({
-	title,
-	imageURL,
-	author,
-	rating,
-	onItemClick,
-}: BookItemProps & Book) {
+export default function BookItem({ book, onItemClick }: BookItemProps) {
+	const { title, rating, imageURL, author } = book;
+
 	return (
 		<div className="bookItem element" onClick={() => onItemClick(true)}>
-			<img  src={imageURL} alt={`The cover for the book „${title}“`} />
-			<Rating rating={+rating} />
+			<img src={imageURL} alt={`The cover for the book „${title}“`}/>
+			<Rating rating={+rating} book={book}/>
 			<h3 className="bookTitle">{title}</h3>
 			<span>{author}</span>
 		</div>

@@ -4,8 +4,13 @@ import { Book } from "../components/Books/BookItem";
 import BookRow from "../components/Books/BookRow";
 import "./Home.scss";
 import { dummyBooks2 } from "../components/Books/mockData";
+import { User } from "../App";
 
-export default function Home() {
+interface HomeProps {
+	user?: User;
+}
+
+export default function Home({ user }: HomeProps) {
 	const [modalVisible, setModalVisible] = useState(false);
 	const [selectedBook, setSelectedBook] = useState<undefined | Book>(
 		undefined
@@ -17,17 +22,20 @@ export default function Home() {
 				<BookDetailModal
 					selectedBook={selectedBook}
 					onClose={setModalVisible}
+					user={user}
 				/>
 			) : null}
-			<h2>Deine Empfehlungen</h2>
-			<BookRow
-				onItemClick={(book: Book) => {
-					setModalVisible(true);
-					setSelectedBook(book);
-					console.log(book);
+			{user ? <>
+				<h2>Deine Empfehlungen</h2>
+				<BookRow
+					onItemClick={(book: Book) => {
+						setModalVisible(true);
+						setSelectedBook(book);
+						console.log(book);
 
-				}}
-				books={dummyBooks2}/>
+					}}
+					books={dummyBooks2}/>
+			</> : null}
 			<h2>Top 5 in deinem Land</h2>
 			<BookRow
 				onItemClick={(book: Book) => {

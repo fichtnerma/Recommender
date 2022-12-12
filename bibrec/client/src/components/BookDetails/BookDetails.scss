@@ -43,10 +43,15 @@
 			img {
 				width: 100%;
 				border: 2px solid black;
+				margin-bottom: 0.25rem;
 			}
 
 			span {
 				color: gray;
+			}
+
+			.rating {
+				padding-bottom: 0;
 			}
 		}
 
@@ -64,6 +69,7 @@
 			}
 
 			h3 {
+				margin-top: 0.25rem;
 				font-size: 1.5rem;
 				font-weight: unset;
 				color: gray;
