@@ -1,11 +1,20 @@
-from Utils import get_books
-import pandas as pd
-import numpy as np
+import json
+from Utils import *
 
-books = get_books("../../data/BX-Books.csv")
+booksCopy = get_books()
 
-editions_data = pd.read_csv("../../data/ol_dump_editions_latest.csv")
+json_data = None
+# with open('../../data/testdata.txt') as f:
+#     json_data = json.load(f)
 
-editions_data = editions_data[books['isbn'].isin(books['isbn'])]
+with open('../../data/ol_dump_editions_2010-12-31.txt') as f:
+    json_data = json.load(f.read())
 
-editions_data.drop(["by_statement",""])
+editions_data = pd.json_normalize(json_data)
+
+print(editions_data.columns)
+
+
+editions_data = editions_data[editions_data['isbn_10'].isin(booksCopy['isbn'])]
+
+editions_data.to_csv('../../data/editions_data.csv')

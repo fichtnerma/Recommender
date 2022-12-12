@@ -74,7 +74,7 @@ def get_most_rated_books(df, n=10):
 
 def get_least_rated_books(df,n=10):
     least_rated_books = df.sort_values('count', ascending=True)
-    most_rated_books = most_rated_books[:n]
+    least_rated_books = least_rated_books[:n]
     return least_rated_books
 
 
@@ -119,3 +119,19 @@ def get_lowest_rated_books(books, ratings, n=10):
 def get_highest_rated_books_in_country(books, ratings, country, n=10):
     get_highest_rated_books(books, ratings, n=100)
 
+
+
+# import json
+
+# booksCopy = books
+
+# json_data = None
+# with open('../../data/ol_dump_editions_2010-12-31.json') as f:
+#     json_data = json.load(f.read())
+
+# editions_data = pd.json_normalize(json_data)
+
+
+# editions_data = editions_data[books['isbn'].isin(books['isbn'])]
+
+# editions_data.drop(["by_statement",""])
