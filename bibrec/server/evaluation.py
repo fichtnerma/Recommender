@@ -41,7 +41,7 @@ def get_recall(top_n_user_pred, user_predictions, threshold=5):
     return true_positive / relevant_items_count if relevant_items_count != 0 else 0
 
 
-def get_avg_precision(all_ratings, predictions, k=10, threshold=5):
+def get_avg_precision(all_ratings, predictions, k=10, threshold=7.5):
     """Get average precision for the provided predictions over all users with ratings
 
         Args:
@@ -66,7 +66,7 @@ def get_avg_precision(all_ratings, predictions, k=10, threshold=5):
     return precision_sum / len(predictions.items())
 
 
-def get_avg_recall(all_ratings, predictions, k=10, threshold=3.5):
+def get_avg_recall(all_ratings, predictions, k=10, threshold=7.5):
     """Get average recall for the provided predictions over all users with ratings
 
         Args:
@@ -82,14 +82,6 @@ def get_avg_recall(all_ratings, predictions, k=10, threshold=3.5):
     recall_sum = 0
     for idx, (uid, pred_items) in enumerate(predictions.items()):
         user_ratings = all_ratings[all_ratings["userId"] == uid]
-        # merged_items = pred_items.merge(user_ratings, on="itemId", how="left")
-        # merged_items = merged_items.sort_values("est_r", ascending=False)
-        # top_k_user_pred = merged_items[:k]
-
-        # print("Index:", idx)
-        # print("Uid:", uid)
-        # print("User Ratings:", len(user_ratings))
-
         top_k_user_pred = pred_items[:k]
         merged = top_k_user_pred.merge(user_ratings, on="itemId", how="left")
 
