@@ -79,8 +79,6 @@ def convert_isbn(id):
             check_digit = 0
         isbn += str(check_digit)
         return isbn
-    elif len(isbn) == 13:
-        return isbn
     else:
         return np.nan
 
