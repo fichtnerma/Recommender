@@ -20,7 +20,7 @@ export interface UserInfo {
 
 export default function App() {
 	const [user, setUser] = useState<User | undefined>(undefined);
-	const [modalVisible, setModalVisible] = useState(true);
+	const [modalVisible, setModalVisible] = useState(false);
 
 	useEffect(() => {
 		const userId = sessionStorage.getItem("userId");
@@ -39,7 +39,8 @@ export default function App() {
 				country: country ?? undefined,
 				state: state ?? undefined
 			});
-			setModalVisible(false);
+		} else {
+			setModalVisible(true)
 		}
 	}, []);
 
@@ -57,7 +58,7 @@ export default function App() {
 	return (
 		<div className="App">
 			<Header setVisible={setModalVisible} user={user} setUser={setUser}/>
-			{modalVisible ? <Modal visible={modalVisible} setVisible={setModalVisible} setUser={setUser}/> : null}
+			{modalVisible ? <Modal setVisible={setModalVisible} setUser={setUser}/> : null}
 			<Home user={user}/>
 		</div>
 	);

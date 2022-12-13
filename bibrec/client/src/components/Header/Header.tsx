@@ -16,6 +16,7 @@ export default function Header({ user, setUser, setVisible }: HeaderProps) {
 	function onLogout() {
 		setUser(undefined);
 		sessionStorage.clear();
+		setVisible(true);
 	}
 
 	return (
@@ -28,10 +29,7 @@ export default function Header({ user, setUser, setVisible }: HeaderProps) {
 				<a href="/">Startseite</a>
 			</nav>
 			<div className={"userManagement"}>{user ? (
-				<><p>
-					Hallo <strong>{user?.username}</strong>!
-				</p>
-				</>
+				<p>Hallo <strong>{user?.username}</strong>!</p>
 			) : null}
 				<button onClick={user ? onLogout : onLogin}>{user ? "Abmelden" : "Anmelden"}</button>
 			</div>

@@ -3,7 +3,7 @@ import { User, UserInfo } from "../../App";
 import "./Login.scss";
 
 interface LoginProps {
-	setUser: Dispatch<SetStateAction<User>> ;
+	setUser: Dispatch<SetStateAction<User>>;
 	close: () => void;
 }
 
