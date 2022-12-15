@@ -21,10 +21,10 @@ export default function Header({ user, setUser, setVisible }: HeaderProps) {
 
 	return (
 		<header className="header">
-			<div className="logoWrapper">
+			<a className="logoWrapper" href={"/"}>
 				<img src="/logo.png" alt="logo"/>
 				<h1>BibRec</h1>
-			</div>
+			</a>
 			<nav>
 				<a href="/">Startseite</a>
 			</nav>

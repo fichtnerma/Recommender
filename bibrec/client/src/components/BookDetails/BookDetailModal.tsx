@@ -6,10 +6,11 @@ import { User } from "../../App";
 interface BookDetailModelProps {
 	selectedBook: Book;
 	onClose: (value: boolean) => void;
+	setSelectedBook: (value: Book) => void;
 	user?: User;
 }
 
-export default function BookDetailModal({ onClose, selectedBook, user }: BookDetailModelProps) {
+export default function BookDetailModal({ onClose, selectedBook, user, setSelectedBook }: BookDetailModelProps) {
 
 	useEffect(() => {
 		document.addEventListener("keydown", handleCloseOnEsc);
@@ -25,7 +26,7 @@ export default function BookDetailModal({ onClose, selectedBook, user }: BookDet
 		<div className="modalBackground">
 			<div className="detailModal">
 				<div className={"closeIcon"} onClick={() => onClose(false)}/>
-				<BookDetails selectedBook={selectedBook} user={user}/>
+				<BookDetails selectedBook={selectedBook} setSelectedBook={setSelectedBook} user={user}/>
 			</div>
 		</div>
 	);

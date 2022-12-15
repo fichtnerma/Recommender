@@ -12,6 +12,8 @@ export interface Book {
 	imageURL: string;
 	author: string;
 	rating: number;
+	pubYear: number;
+	publisher: string;
 }
 
 export default function BookItem({ book, onItemClick }: BookItemProps) {

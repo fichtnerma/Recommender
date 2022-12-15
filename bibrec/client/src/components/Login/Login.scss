@@ -38,12 +38,15 @@
 	.part1 {
 		width: 100%;
 		margin: 0 6rem;
+
+		h2 {
+			font-weight: 900;
+		}
 	}
 
 	.row {
 		width: 100%;
-		margin: 0 auto;
-		margin-top: 40px;
+		margin: 40px auto 0;
 		display: flex;
 
 		.col {
