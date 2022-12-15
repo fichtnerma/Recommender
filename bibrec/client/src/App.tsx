@@ -44,17 +44,6 @@ export default function App() {
 		}
 	}, []);
 
-	useEffect(() => {
-		if (user) {
-			sessionStorage.setItem("userId", user.id.toString());
-			sessionStorage.setItem("username", user.username);
-			user.country && sessionStorage.setItem("country", user.country);
-			user.state && sessionStorage.setItem("state", user.state);
-			user.city && sessionStorage.setItem("city", user.city);
-			user.age && sessionStorage.setItem("age", user.age.toString());
-		}
-	}, [user]);
-
 	return (
 		<div className="App">
 			<Header setVisible={setModalVisible} user={user} setUser={setUser}/>

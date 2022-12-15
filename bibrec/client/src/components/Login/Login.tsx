@@ -20,11 +20,20 @@ export default function Login(props: LoginProps) {
 			username: userName
 		};
 		setUser(user);
+		sessionStorage.setItem("userId", user.id.toString());
+		sessionStorage.setItem("username", user.username);
+
 		setPart(2);
 	}
 
 	function onFormSubmit() {
 		userInfo && setUser((prevUser) => ({ ...prevUser, ...userInfo }));
+
+		userInfo?.country && sessionStorage.setItem("country", userInfo.country);
+		userInfo?.state && sessionStorage.setItem("state", userInfo.state);
+		userInfo?.city && sessionStorage.setItem("city", userInfo.city);
+		userInfo?.age && sessionStorage.setItem("age", userInfo.age.toString());
+
 		close();
 	}
 
