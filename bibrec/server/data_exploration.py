@@ -63,8 +63,8 @@ def normalize_ratings_for_user (df, users_with_mean):
     return normalized_ratings
 
 # calculate age of books
-def calc_age(df):
-    df['age'] = df['year_of_publication'].map(lambda x: 2005 - x)
+def normalize_year_of_publication(df):
+    df['normalized_year_of_publication'] = df['year_of_publication'].map(lambda x: 2005 - x)
     return df
 
 def get_most_rated_books(df, n=10):
@@ -85,28 +85,27 @@ def remove_users_without_ratings(df, n = 3):
 def remove_books_without_ratings(df,n = 3):
     books_with_ratings = df[df["count"] >= n]
     return books_with_ratings
-    
 
-books = get_books()
-users = get_users()
-ratings = get_ratings()
+def get_normalized_data():
+    books = get_books()
+    users = get_users()
+    ratings = get_ratings()
 
+    explicit_ratings = ratings[ratings.book_rating != 0]
+    filtered_ratings = filter_ratings(explicit_ratings, books)
 
-# implicit_ratings = ratings[ratings.book_rating == 0]
-explicit_ratings = ratings[ratings.book_rating != 0]
+    books = add_mean_and_count(books, filtered_ratings)
+    books = normalize_year_of_publication(books)
+    encoded_books = hot_encode_publisher(books, 10)
 
-filtered_ratings = filter_ratings(explicit_ratings, books)
+    users = add_user_mean_and_count(users, filtered_ratings)
+    encoded_users = hot_encode_country(users, 10)
+    encoded_users = hot_encode_state(encoded_users, 10)
 
-books = add_mean_and_count(books, filtered_ratings)  
-users = add_user_mean_and_count(users, filtered_ratings) 
-normalized_ratings = normalize_ratings_for_user(filtered_ratings, users)
+    normalized_ratings = normalize_ratings_for_user(filtered_ratings, users)
 
-books = calc_age(books)
+    return encoded_books, encoded_users, normalized_ratings
 
-encoded_users = hot_encode_country(users, 10)
-encoded_users = hot_encode_state(encoded_users, 10)
-
-encoded_books = hot_encode_publisher(books, 10)
 
 def get_lowest_rated_books(books, ratings, n=10):
     lowest_rated_books = ratings.groupby('isbn').book_rating.mean().sort_values(ascending=True)
@@ -115,10 +114,11 @@ def get_lowest_rated_books(books, ratings, n=10):
     lowest_rated_books = lowest_rated_books.merge(books, on='isbn')
     return lowest_rated_books
 
-# get highest rated books in your country 
+# get highest rated books in your country
 def get_highest_rated_books_in_country(books, ratings, country, n=10):
     get_highest_rated_books(books, ratings, n=100)
 
+books, users, ratings = get_normalized_data()
 
 
 # import json
