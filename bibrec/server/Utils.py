@@ -11,7 +11,7 @@ def get_books():
     # Replace years above 2005 with NaN (dataset was released in 2005)
     books.loc[books.year_of_publication > 2005, 'year_of_publication'] = np.nan
     # Replace NaN years with mean of all years
-    books.fillna(round(books.year_of_publication.mean()))
+    books.year_of_publication.fillna(round(books.year_of_publication.mean()))
     books["isbn13"] = books.isbn.map(convert_isbn)
     books = books[books.isbn13.notna()]
 
