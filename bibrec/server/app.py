@@ -1,3 +1,6 @@
+import random
+from collections import defaultdict
+
 from flask import Flask
 from flask_restful import Api, Resource, reqparse
 
@@ -7,16 +10,47 @@ api = Api(app)
 
 # Register User
 class RegisterUser(Resource):
+    user_id_key = "userId"
+    username_key = "username"
+    country_key = "country"
+    state_key = "state"
+    city_key = "city"
+    age_key = "age"
     register_user_args = reqparse.RequestParser()
-    register_user_args.add_argument("username", type=str, help="Username is required", required=True)
-    register_user_args.add_argument("country", type=str, help="Country of the user")
-    register_user_args.add_argument("state", type=str, help="State of the user")
-    register_user_args.add_argument("city", type=str, help="City of the user")
-    register_user_args.add_argument("age", type=int, help="Age of the user")
+    register_user_args.add_argument(username_key, type=str, help="Username is required", required=True)
+    register_user_args.add_argument(country_key, type=str, help="Country of the user")
+    register_user_args.add_argument(state_key, type=str, help="State of the user")
+    register_user_args.add_argument(city_key, type=str, help="City of the user")
+    register_user_args.add_argument(age_key, type=int, help="Age of the user")
+
+    users_dict = defaultdict(list)
 
     def post(self):
         args = self.register_user_args.parse_args()
 
+        # check if user already exist
+        for uid, user_info in self.users_dict.items():
+            if user_info[self.username_key] == args[self.username_key]:
+                # update user info if new info us submitted
+                user_info[self.country_key] = args[self.country_key]
+                user_info[self.state_key] = args[self.state_key]
+                user_info[self.city_key] = args[self.city_key]
+                user_info[self.age_key] = args[self.age_key]
+
+                # create return dict
+                temp_user = user_info.copy()
+                temp_user[self.user_id_key] = uid
+
+                app.logger.info(f'User „{user_info[self.username_key]}“ logged in')
+                return temp_user
+
+        # add a new user
+        user_id = random.getrandbits(32)
+        user_info = args.copy()
+        self.users_dict[user_id] = user_info
+        args[self.user_id_key] = user_id
+
+        app.logger.info(f'New user named „{user_info[self.username_key]}“ registered')
         return args
 
 
