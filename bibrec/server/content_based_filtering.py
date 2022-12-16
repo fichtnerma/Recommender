@@ -1,7 +1,5 @@
 from Utils import *
 from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import linear_kernel
 
@@ -28,13 +26,14 @@ print(bookData.count())
 
 bookData = bookData.fillna(" ")
 
+bookData["book_info"] = bookData["book_title"] + " "+ bookData["subtitle"] + " " + bookData["subjects"] + " " + bookData["notes"] + " " + bookData["first_sentence"] + " " + bookData["genres"]
+
 tfidf = TfidfVectorizer(stop_words='english')
-overview_matrix = tfidf.fit_transform(bookData["subjects"])
+overview_matrix = tfidf.fit_transform(bookData["book_info"])
 #Output the shape of tfidf_matrix
 overview_matrix.shape
 
 similarity_matrix = linear_kernel(overview_matrix,overview_matrix)
-similarity_matrix
 
 #books index mapping
 mapping = pd.Series(bookData.index,index = bookData["isbn13"])
@@ -50,7 +49,7 @@ def recommend_tf_idf(isbn13):
     similarity_score = similarity_score[1:15]
     #return movie names using the mapping series
     book_indices = [i[0] for i in similarity_score]
-    return (bookData[["book_title", "isbn13"]].iloc[book_indices])
+    return (bookData[["book_title", "isbn13", "isbn"]].iloc[book_indices])
 
 print(recommend_tf_idf("9780002005012"))
 
