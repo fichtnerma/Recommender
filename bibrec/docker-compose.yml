@@ -7,6 +7,7 @@ services:
     user: "1000:1001"
     volumes:
       - ./server:/api/src
+      - ../data:/api/src/data
     environment:
       - FLASK_ENV=development
       - FLASK_APP=app.py

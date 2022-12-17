@@ -1,8 +1,11 @@
+import json
 import random
 from collections import defaultdict
 
 from flask import Flask
 from flask_restful import Api, Resource, reqparse
+
+from Utils import get_books
 
 app = Flask(__name__)
 api = Api(app)
@@ -67,6 +70,11 @@ class RateBook(Resource):
         return f'Book with isbn {args["isbn10"]} rated successfully', 200
 
 
+books = get_books()
+books.rename(columns={'isbn': 'isbn10', 'book_title': 'title', 'book_author': 'author', 'year_of_publication': 'pubYear', 'image_url_s': 'imageUrlSmall',
+                      'image_url_m': 'imageUrlMedium', 'image_url_l': 'imageUrlLarge'}, inplace=True)
+
+
 # Get recommendations of a user
 class UserRecommendations(Resource):
     user_rec_args = reqparse.RequestParser()
@@ -75,7 +83,10 @@ class UserRecommendations(Resource):
 
     def post(self):
         args = self.user_rec_args.parse_args()
-        return args
+
+        json_str = books.sample(n=20).to_json(orient='records')
+        parsed = json.loads(json_str)
+        return parsed
 
 
 # Get top books of the user country
