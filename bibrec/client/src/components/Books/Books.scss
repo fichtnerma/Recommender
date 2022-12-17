@@ -1,0 +1,29 @@
+.bookRow {
+	width: 100%;
+	grid-template-columns: repeat(5, 1fr);
+	display: grid;
+	column-gap: 5%;
+	row-gap: 25px;
+	margin-bottom: 2rem;
+	color: #000;
+
+	.bookItem {
+		cursor: pointer;
+
+		img {
+			border: 2px solid black;
+			width: 100%;
+			aspect-ratio: 1 / 1.5;
+			object-fit: cover;
+			min-height: 180px;
+		}
+
+		.bookTitle {
+			margin: 0;
+		}
+	}
+}
+
+.booksBlockWrapper {
+	margin-bottom: 3rem;
+}

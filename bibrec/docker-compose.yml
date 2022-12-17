@@ -3,6 +3,7 @@ version: '3'
 services:
   server:
     build: ./server
+    user: "1000:1001"
     volumes:
       - ./server:/api/src
     environment:
@@ -16,6 +17,7 @@ services:
   client:
     build: ./client
     command: npm run dev
+    user: "1000:1001"
     volumes:
       - ./client/:/app
       - /app/node_modules

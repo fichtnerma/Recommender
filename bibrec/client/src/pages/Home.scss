@@ -1,0 +1,9 @@
+.wrapper {
+	width: 70%;
+	margin: calc(var(--header-height) + 3rem) auto 1rem;
+
+	h2 {
+		font-size: 2rem;
+		margin-bottom: 0.75rem;
+	}
+}
