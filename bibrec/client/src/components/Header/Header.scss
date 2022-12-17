@@ -1,0 +1,71 @@
+.header {
+	background-color: #fff;
+	border-bottom: 1px solid #e6e6e6;
+	box-shadow: 0 5px 10px 0 rgba(0, 0, 0, 0.1);
+	height: var(--header-height);
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	padding: 10px 0px;
+
+	.logoWrapper {
+		height: var(--header-height);
+		display: inline-flex;
+		gap: 1rem;
+		place-content: center;
+		place-items: center;
+		margin-left: 1.5rem;
+		color: black;
+
+		h1 {
+			font-weight: 900;
+		}
+	}
+
+	.userManagement {
+		margin-left: auto;
+		display: flex;
+		align-items: center;
+	}
+
+	img {
+		height: 80%;
+	}
+
+	h1 {
+		margin: 0;
+	}
+
+	button {
+		margin-right: 1.5rem;
+		justify-self: flex-end;
+	}
+
+	nav {
+		margin-left: 2.5rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+
+		a {
+			color: black;
+			text-decoration: none;
+			font-size: x-large;
+			font-weight: bold;
+			transition: opacity 200ms;
+
+			&:hover {
+				opacity: 0.7;
+			}
+		}
+	}
+
+	p {
+		margin: 0 1rem 0 0;
+		font-size: 1.5rem;
+	}
+}

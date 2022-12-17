@@ -1,34 +1,54 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import './App.css'
+import { useEffect, useState } from "react";
+import "./App.css";
+import Home from "./pages/Home";
+import Header from "./components/Header/Header";
+import Modal from "./components/Login/Modal";
 
-function App() {
-  const [count, setCount] = useState(0)
+export type User = UserIdentifiers & UserInfo
 
-  return (
-    <div className="App">
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </div>
-  )
+interface UserIdentifiers {
+	id: number;
+	username: string;
 }
 
-export default App
+export interface UserInfo {
+	country?: string,
+	state?: string,
+	city?: string,
+	age?: number
+}
+
+export default function App() {
+	const [user, setUser] = useState<User | undefined>(undefined);
+	const [modalVisible, setModalVisible] = useState(false);
+
+	useEffect(() => {
+		const userId = sessionStorage.getItem("userId");
+		const username = sessionStorage.getItem("username");
+		const country = sessionStorage.getItem("country");
+		const state = sessionStorage.getItem("state");
+		const city = sessionStorage.getItem("city");
+		const age = sessionStorage.getItem("age");
+
+		if (userId && username) {
+			setUser({
+				username,
+				id: +userId,
+				age: Number(age) || undefined,
+				city: city ?? undefined,
+				country: country ?? undefined,
+				state: state ?? undefined
+			});
+		} else {
+			setModalVisible(true)
+		}
+	}, []);
+
+	return (
+		<div className="App">
+			<Header setVisible={setModalVisible} user={user} setUser={setUser}/>
+			{modalVisible ? <Modal setVisible={setModalVisible} setUser={setUser}/> : null}
+			<Home user={user}/>
+		</div>
+	);
+}
