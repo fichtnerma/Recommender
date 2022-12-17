@@ -2,10 +2,11 @@ import json
 import random
 from collections import defaultdict
 
+import pandas as pd
 from flask import Flask
 from flask_restful import Api, Resource, reqparse
 
-from Utils import get_books
+from Utils import get_books, get_ratings, filter_ratings, get_least_rated_books, get_most_rated_books, add_mean_and_count
 
 app = Flask(__name__)
 api = Api(app)
@@ -71,6 +72,13 @@ class RateBook(Resource):
 
 
 books = get_books()
+ratings = get_ratings()
+# print(ratings[:10])
+filtered_ratings = filter_ratings(ratings, books)
+print(books["isbn13"][:10])
+
+books_with_mean_count = add_mean_and_count(books, filtered_ratings)
+
 books.rename(columns={'isbn': 'isbn10', 'book_title': 'title', 'book_author': 'author', 'year_of_publication': 'pubYear', 'image_url_s': 'imageUrlSmall',
                       'image_url_m': 'imageUrlMedium', 'image_url_l': 'imageUrlLarge'}, inplace=True)
 
@@ -84,7 +92,7 @@ class UserRecommendations(Resource):
     def post(self):
         args = self.user_rec_args.parse_args()
 
-        json_str = books.sample(n=20).to_json(orient='records')
+        json_str = books_with_mean_count.sample(n=20).to_json(orient='records')
         parsed = json.loads(json_str)
         return parsed
 
@@ -102,12 +110,16 @@ class TopInCountry(Resource):
 
 # Get a mix of most popular and least popular items
 class Browse(Resource):
-    browse_args = reqparse.RequestParser()
-    browse_args.add_argument("userId", type=int, help="The id of the current user")
+    most_rated = get_most_rated_books(books_with_mean_count, 80)
+    least_rated = get_least_rated_books(books_with_mean_count, 100)
 
     def post(self):
-        args = self.browse_args.parse_args()
-        return args
+        least_rated_sample = self.least_rated.sample(n=20)
+        combined_books = pd.concat([self.most_rated, least_rated_sample])
+        shuffled_books = combined_books.sample(n=100)
+        json_str = shuffled_books.to_json(orient='records')
+        parsed = json.loads(json_str)
+        return parsed
 
 
 # Get similar items

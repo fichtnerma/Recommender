@@ -159,14 +159,14 @@ def normalize_year_of_publication(df):
     return df
 
 
-def get_most_rated_books(df, n=10):
-    most_rated_books = df.sort_values('count', ascending=False)
+def get_most_rated_books(df, n=10) -> pd.DataFrame:
+    most_rated_books = df.sort_values('rating_count', ascending=False)
     most_rated_books = most_rated_books[:n]
     return most_rated_books
 
 
-def get_least_rated_books(df, n=10):
-    least_rated_books = df.sort_values('count', ascending=True)
+def get_least_rated_books(df, n=10) -> pd.DataFrame:
+    least_rated_books = df.sort_values('rating_count', ascending=True)
     least_rated_books = least_rated_books[:n]
     return least_rated_books
 
