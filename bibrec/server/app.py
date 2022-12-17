@@ -73,13 +73,10 @@ class RateBook(Resource):
 
 books = get_books()
 ratings = get_ratings()
-# print(ratings[:10])
 filtered_ratings = filter_ratings(ratings, books)
-print(books["isbn13"][:10])
-
 books_with_mean_count = add_mean_and_count(books, filtered_ratings)
 
-books.rename(columns={'isbn': 'isbn10', 'book_title': 'title', 'book_author': 'author', 'year_of_publication': 'pubYear', 'image_url_s': 'imageUrlSmall',
+books_with_mean_count.rename(columns={'isbn': 'isbn10', 'book_title': 'title', 'book_author': 'author', 'year_of_publication': 'pubYear', 'image_url_s': 'imageUrlSmall',
                       'image_url_m': 'imageUrlMedium', 'image_url_l': 'imageUrlLarge'}, inplace=True)
 
 
@@ -102,10 +99,13 @@ class TopInCountry(Resource):
     top_in_country_args = reqparse.RequestParser()
     top_in_country_args.add_argument("userId", type=int, help="The id of the current user")
     top_in_country_args.add_argument("browserLang", type=str, help="The language of the user browser")
+    top_in_country_args.add_argument("recommendationCount", type=int, help="The amount of recommendations", default=25)
 
     def post(self):
         args = self.top_in_country_args.parse_args()
-        return args
+        json_str = books_with_mean_count.sample(n=args["recommendationCount"]).to_json(orient='records')
+        parsed = json.loads(json_str)
+        return parsed
 
 
 # Get a mix of most popular and least popular items
