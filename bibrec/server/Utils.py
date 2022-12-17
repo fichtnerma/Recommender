@@ -176,10 +176,13 @@ def remove_books_without_ratings(df,n = 3):
     books_with_ratings = df[df["count"] >= n]
     return books_with_ratings
 
-def get_normalized_data():
-    books = get_books()
-    users = get_users()
-    ratings = get_ratings()
+def get_normalized_data(
+        books_path='../../data/BX-Books.csv',
+        users_path='../../data/BX-Users.csv',
+        ratings_path='../../data/BX-Book-Ratings.csv'):
+    books = get_books(books_path)
+    users = get_users(users_path)
+    ratings = get_ratings(ratings_path)
 
     explicit_ratings = ratings[ratings.book_rating != 0]
     filtered_ratings = filter_ratings(explicit_ratings, books)
