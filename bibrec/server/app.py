@@ -125,12 +125,16 @@ class Browse(Resource):
 # Get similar items
 class SimilarBooks(Resource):
     similar_Books_args = reqparse.RequestParser()
-    similar_Books_args.add_argument("isbn10", type=int, help="The ISBN of the book for which similar books should be found", required=True)
+    similar_Books_args.add_argument("isbn10", type=str, help="The ISBN of the book for which similar books should be found", required=True)
     similar_Books_args.add_argument("userId", type=int, help="The id of the current user")
+    similar_Books_args.add_argument("recommendationCount", type=int, help="The amount of recommendations", default=5)
 
     def post(self):
         args = self.similar_Books_args.parse_args()
-        return args
+
+        json_str = books_with_mean_count.sample(n=args["recommendationCount"]).to_json(orient='records')
+        parsed = json.loads(json_str)
+        return parsed
 
 
 api.add_resource(RegisterUser, "/registerUser")
