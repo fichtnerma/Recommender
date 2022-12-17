@@ -26,7 +26,7 @@ def add_user_mean_and_count(df, ratings):
     return users_with_mean
 
 # hot encoding users country
-def hot_encode_country(df, top_n=10):
+def hot_encode_country(df, top_n=20):
     top_countries = df.country.value_counts()[:top_n].index.tolist()
     top_countries.append("other")
     top_countries = list(map(lambda x :str(x).strip().lower().replace(' ', '_'), top_countries))
@@ -36,7 +36,7 @@ def hot_encode_country(df, top_n=10):
     return encoded_users
 
 # hot encoding users state
-def hot_encode_state(df, top_n=10):
+def hot_encode_state(df, top_n=20):
     top_states = df.state.value_counts()[:top_n].index.tolist()
     top_states.append("other")
     top_states = list(map(lambda x :str(x).strip().lower().replace(' ', '_'), top_states))
@@ -46,7 +46,7 @@ def hot_encode_state(df, top_n=10):
     return encoded_users
 
 # hot encoding books publisher
-def hot_encode_publisher(df, top_n=10):
+def hot_encode_publisher(df, top_n=20):
     top_publishers = df.publisher.value_counts()[:top_n].index.tolist()
     top_publishers.append("other")
     top_publishers = list(map(lambda x :str(x).strip().lower().replace(' ', '_'), top_publishers))
