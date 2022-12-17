@@ -107,8 +107,7 @@ def add_user_mean_and_count(df, ratings):
     users_with_mean["user_mean"].fillna(0, inplace=True)
     return users_with_mean
 
-# hot encoding users country
-def hot_encode_country(df, top_n=20):
+def normalize_country(df, top_n=20):
     top_countries = df.country.value_counts()[:top_n].index.tolist()
     top_countries.append("other")
     encoded_users = df.copy()
@@ -116,25 +115,20 @@ def hot_encode_country(df, top_n=20):
     countries = pd.Categorical(countries, categories=top_countries).fillna("other")
     countries = list(map(lambda x: str(x).strip().lower().replace(' ', '_'), countries))
     encoded_users["country"] = countries
-    encoded_users = pd.get_dummies(encoded_users, columns=['country'], prefix='country')
-
     return encoded_users
 
-# hot encoding users state
-def hot_encode_state(df, top_n=20):
+def normalize_state(df, top_n=20):
     top_states = df.state.value_counts()[:top_n].index.tolist()
     top_states.append("other")
     encoded_users = df.copy()
     states = encoded_users["state"]
     states = pd.Categorical(states, categories=top_states).fillna("other")
     states = list(map(lambda x: str(x).strip().lower().replace(' ', '_'), states))
-    encoded_users = pd.get_dummies(encoded_users, columns=['state'], prefix='state')
     encoded_users["state"] = states
 
     return encoded_users
 
-# hot encoding books publisher
-def hot_encode_publisher(df, top_n=20):
+def normalize_publisher(df, top_n=20):
     top_publishers = df.publisher.value_counts()[:top_n].index.tolist()
     top_publishers.append("other")
     encoded_books = df.copy()
@@ -142,8 +136,8 @@ def hot_encode_publisher(df, top_n=20):
     publisher = pd.Categorical(publisher, categories=top_publishers).fillna("other")
     publisher = list(map(lambda x: str(x).strip().lower().replace(' ', '_'), publisher))
     encoded_books["publisher"] = publisher
-    encoded_books = pd.get_dummies(encoded_books, columns=['publisher'], prefix='publisher')
     return encoded_books
+
 
 #normalizing ratings
 def normalize_ratings_for_user (df, users_with_mean):
@@ -189,15 +183,33 @@ def get_normalized_data(
 
     books = add_mean_and_count(books, filtered_ratings)
     books = normalize_year_of_publication(books)
-    encoded_books = hot_encode_publisher(books)
+    books = normalize_publisher(books)
 
     users = add_user_mean_and_count(users, filtered_ratings)
-    encoded_users = hot_encode_country(users)
-    encoded_users = hot_encode_state(encoded_users)
+    encoded_users = normalize_country(users)
+    encoded_users = normalize_state(encoded_users)
 
     normalized_ratings = normalize_ratings_for_user(filtered_ratings, users)
 
-    return encoded_books, encoded_users, normalized_ratings
+    return books, encoded_users, normalized_ratings
+
+def hot_encode_publisher(books):
+    encoded_books = pd.get_dummies(books, columns=['publisher'], prefix='publisher')
+    return encoded_books
+
+def hot_encode_country(users):
+    encoded_users = pd.get_dummies(users, columns=['country'], prefix='country')
+    return encoded_users
+
+def hot_encode_state(users):
+    encoded_users = pd.get_dummies(users, columns=['state'], prefix='state')
+    return encoded_users
+
+def hot_encode_data(books, users):
+    encoded_books = hot_encode_publisher(books)
+    encoded_users = hot_encode_country(users)
+    encoded_users = hot_encode_state(users)
+    return encoded_books,  encoded_users
 
 
 def get_lowest_rated_books(books, ratings, n=10):
