@@ -1,4 +1,3 @@
-from Utils import get_books, get_users, get_ratings
 import pandas as pd
 import numpy as np
 
@@ -84,7 +83,6 @@ def convert_isbn(id):
         return isbn
     else:
         return np.nan
->>>>>>> 3915f04 (format(data): remove dead code, avoid resetting default arguments)
 
 
 # filtern von ratings, die nicht in books sind
@@ -113,29 +111,37 @@ def add_user_mean_and_count(df, ratings):
 def hot_encode_country(df, top_n=20):
     top_countries = df.country.value_counts()[:top_n].index.tolist()
     top_countries.append("other")
-    top_countries = list(map(lambda x :str(x).strip().lower().replace(' ', '_'), top_countries))
     encoded_users = df.copy()
-    encoded_users["country"] = pd.Categorical(encoded_users["country"], categories=top_countries).fillna("other")
+    countries = encoded_users["country"]
+    countries = pd.Categorical(countries, categories=top_countries).fillna("other")
+    countries = list(map(lambda x: str(x).strip().lower().replace(' ', '_'), countries))
+    encoded_users["country"] = countries
     encoded_users = pd.get_dummies(encoded_users, columns=['country'], prefix='country')
+
     return encoded_users
 
 # hot encoding users state
 def hot_encode_state(df, top_n=20):
     top_states = df.state.value_counts()[:top_n].index.tolist()
     top_states.append("other")
-    top_states = list(map(lambda x :str(x).strip().lower().replace(' ', '_'), top_states))
     encoded_users = df.copy()
-    encoded_users["state"] = pd.Categorical(encoded_users["state"], categories=top_states).fillna("other")
+    states = encoded_users["state"]
+    states = pd.Categorical(states, categories=top_states).fillna("other")
+    states = list(map(lambda x: str(x).strip().lower().replace(' ', '_'), states))
     encoded_users = pd.get_dummies(encoded_users, columns=['state'], prefix='state')
+    encoded_users["state"] = states
+
     return encoded_users
 
 # hot encoding books publisher
 def hot_encode_publisher(df, top_n=20):
     top_publishers = df.publisher.value_counts()[:top_n].index.tolist()
     top_publishers.append("other")
-    top_publishers = list(map(lambda x :str(x).strip().lower().replace(' ', '_'), top_publishers))
     encoded_books = df.copy()
-    encoded_books["publisher"] = pd.Categorical(encoded_books["publisher"], categories=top_publishers).fillna("other")
+    publisher = encoded_books["publisher"]
+    publisher = pd.Categorical(publisher, categories=top_publishers).fillna("other")
+    publisher = list(map(lambda x: str(x).strip().lower().replace(' ', '_'), publisher))
+    encoded_books["publisher"] = publisher
     encoded_books = pd.get_dummies(encoded_books, columns=['publisher'], prefix='publisher')
     return encoded_books
 
