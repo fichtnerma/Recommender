@@ -186,12 +186,12 @@ def get_normalized_data(
     books = normalize_publisher(books)
 
     users = add_user_mean_and_count(users, filtered_ratings)
-    encoded_users = normalize_country(users)
-    encoded_users = normalize_state(encoded_users)
+    users = normalize_country(users)
+    users = normalize_state(users)
 
     normalized_ratings = normalize_ratings_for_user(filtered_ratings, users)
 
-    return books, encoded_users, normalized_ratings
+    return books, users, normalized_ratings
 
 def hot_encode_publisher(books):
     encoded_books = pd.get_dummies(books, columns=['publisher'], prefix='publisher')
@@ -206,10 +206,10 @@ def hot_encode_state(users):
     return encoded_users
 
 def hot_encode_data(books, users):
-    encoded_books = hot_encode_publisher(books)
-    encoded_users = hot_encode_country(users)
-    encoded_users = hot_encode_state(users)
-    return encoded_books,  encoded_users
+    books = hot_encode_publisher(books)
+    users = hot_encode_country(users)
+    users = hot_encode_state(users)
+    return books,  users
 
 
 def get_lowest_rated_books(books, ratings, n=10):
