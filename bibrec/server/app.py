@@ -73,7 +73,8 @@ class RateBook(Resource):
 
 books = get_books()
 ratings = get_ratings()
-filtered_ratings = filter_ratings(ratings, books)
+explicit_ratings = ratings[ratings.book_rating != 0]
+filtered_ratings = filter_ratings(explicit_ratings, books)
 books_with_mean_count = add_mean_and_count(books, filtered_ratings)
 
 books_with_mean_count.rename(columns={'isbn': 'isbn10', 'book_title': 'title', 'book_author': 'author', 'year_of_publication': 'pubYear', 'image_url_s': 'imageUrlSmall',

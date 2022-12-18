@@ -30,6 +30,8 @@ export default function App() {
 		const city = sessionStorage.getItem("city");
 		const age = sessionStorage.getItem("age");
 
+		// TODO: check if backend is up, else logout
+
 		if (userId && username) {
 			setUser({
 				username,

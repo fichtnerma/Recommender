@@ -1,6 +1,7 @@
 import React, { Dispatch, SetStateAction, useState } from "react";
 import { User, UserInfo } from "../../App";
 import "./Login.scss";
+import axios from "axios";
 
 interface LoginProps {
 	setUser: Dispatch<SetStateAction<User>>;
@@ -14,25 +15,45 @@ export default function Login(props: LoginProps) {
 	const [userInfo, setUserInfo] = useState<UserInfo | undefined>(undefined);
 	const [part, setPart] = useState(1);
 
-	function nextPart() {
-		const user: User = {
-			id: new Date().getTime(),
-			username: userName
-		};
-		setUser(user);
-		sessionStorage.setItem("userId", user.id.toString());
-		sessionStorage.setItem("username", user.username);
+	async function nextPart() {
+		try {
+			const res = await axios.post("http://localhost:4000/registerUser", {
+				username: userName
+			});
+			const { userId } = res.data;
 
-		setPart(2);
+			const user: User = {
+				id: userId,
+				username: userName
+			};
+			setUser(user);
+			sessionStorage.setItem("userId", user.id.toString());
+			sessionStorage.setItem("username", user.username);
+
+			setPart(2);
+		} catch (e) {
+			console.error(e)
+		}
+
 	}
 
-	function onFormSubmit() {
+	async function onFormSubmit() {
 		userInfo && setUser((prevUser) => ({ ...prevUser, ...userInfo }));
 
 		userInfo?.country && sessionStorage.setItem("country", userInfo.country);
 		userInfo?.state && sessionStorage.setItem("state", userInfo.state);
 		userInfo?.city && sessionStorage.setItem("city", userInfo.city);
 		userInfo?.age && sessionStorage.setItem("age", userInfo.age.toString());
+
+		try {
+			await axios.post("http://localhost:4000/registerUser", {
+				username: userName,
+				...userInfo
+			});
+
+		} catch (e) {
+			console.error(e)
+		}
 
 		close();
 	}
