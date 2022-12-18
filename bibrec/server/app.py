@@ -77,7 +77,7 @@ filtered_ratings = filter_ratings(ratings, books)
 books_with_mean_count = add_mean_and_count(books, filtered_ratings)
 
 books_with_mean_count.rename(columns={'isbn': 'isbn10', 'book_title': 'title', 'book_author': 'author', 'year_of_publication': 'pubYear', 'image_url_s': 'imageUrlSmall',
-                      'image_url_m': 'imageUrlMedium', 'image_url_l': 'imageUrlLarge'}, inplace=True)
+                                      'image_url_m': 'imageUrlMedium', 'image_url_l': 'imageUrlLarge'}, inplace=True)
 
 
 # Get recommendations of a user
@@ -89,7 +89,7 @@ class UserRecommendations(Resource):
     def post(self):
         args = self.user_rec_args.parse_args()
 
-        json_str = books_with_mean_count.sample(n=20).to_json(orient='records')
+        json_str = books_with_mean_count.sample(n=args["recommendationCount"]).to_json(orient='records')
         parsed = json.loads(json_str)
         return parsed
 
@@ -143,6 +143,15 @@ api.add_resource(UserRecommendations, "/userRecommendations")
 api.add_resource(TopInCountry, "/topInCountry")
 api.add_resource(Browse, "/browse")
 api.add_resource(SimilarBooks, "/similarBooks")
+
+
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
+    return response
+
 
 if __name__ == "__main__":
     app.run(debug=True)
