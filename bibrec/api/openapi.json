@@ -74,11 +74,10 @@
           {
             "name": "itemId",
             "in": "query",
-            "description": "itemID included in data set",
+            "description": "itemID included in data set as [ISBN-10](https://ean-code.eu/woraus-setzt-sich-eine-isbn-zusammen/)",
             "required": false,
             "schema": {
-              "type": "integer",
-              "format": "int64"
+              "type": "string"
             }
           },
           {
@@ -130,13 +129,12 @@
           "itemIds": {
             "type": "array",
             "items": {
-              "format": "int64",
-              "type": "integer"
+              "format": "string"
             },
             "example": [
-              234,
-              2532,
-              1235
+              "234",
+              "2532",
+              "1235"
             ]
           }
         },

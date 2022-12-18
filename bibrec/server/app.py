@@ -138,12 +138,32 @@ class SimilarBooks(Resource):
         return parsed
 
 
+# Get recommend items
+class RecommendItems(Resource):
+    rec_items_args = reqparse.RequestParser()
+    rec_items_args.add_argument("userId", type=int, help="Invalid parameters")
+    rec_items_args.add_argument("age", type=int, help="Invalid parameters", required=True)
+    rec_items_args.add_argument("locationCountry", type=str, help="Invalid parameters", required=True)
+    rec_items_args.add_argument("locationState", type=str, help="Invalid parameters")
+    rec_items_args.add_argument("locationCity", type=str, help="Invalid parameters")
+    rec_items_args.add_argument("itemId", type=str, help="Invalid parameters")
+    rec_items_args.add_argument("numberOfItems", type=int, help="Invalid parameters", default=10)
+
+    def get(self):
+        args = self.rec_items_args.parse_args()
+
+        json_str = books_with_mean_count.sample(n=args["numberOfItems"]).to_json(orient='records')
+        parsed = json.loads(json_str)
+        return parsed
+
+
 api.add_resource(RegisterUser, "/registerUser")
 api.add_resource(RateBook, "/rateBook")
 api.add_resource(UserRecommendations, "/userRecommendations")
 api.add_resource(TopInCountry, "/topInCountry")
 api.add_resource(Browse, "/browse")
 api.add_resource(SimilarBooks, "/similarBooks")
+api.add_resource(RecommendItems, "/recommendItems")
 
 
 @app.after_request
