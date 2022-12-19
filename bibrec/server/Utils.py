@@ -1,8 +1,10 @@
+import logging
 import numpy as np
 import pandas as pd
 
 
 def get_books(path="./data/BX-Books.csv"):
+    logging.info("getting books from", path)
     books = pd.read_csv(path, sep=";", encoding="latin-1")
     books.columns = books.columns.map(prepare_string)
     books.year_of_publication = pd.to_numeric(books.year_of_publication, errors='coerce')
@@ -15,11 +17,11 @@ def get_books(path="./data/BX-Books.csv"):
     books["year_of_publication"] = pd.to_numeric(books.year_of_publication, downcast="integer")
     books["isbn13"] = books.isbn.map(convert_isbn)
     books = books[books.isbn13.notna()]
-
     return books
 
 
 def get_users(path="./data/BX-Users.csv"):
+    logging.info("getting users from", path)
     users = pd.read_csv(path, sep=";", encoding="latin-1")
     # cleaned column names
     users.columns = users.columns.map(prepare_string)
@@ -48,6 +50,7 @@ def get_users(path="./data/BX-Users.csv"):
 
 
 def get_ratings(path="./data/BX-Book-Ratings.csv"):
+    logging.info("getting ratings from", path)
     ratings = pd.read_csv(path, sep=";", encoding="latin-1")
     ratings.columns = ratings.columns.map(prepare_string)
     ratings["isbn13"] = ratings.isbn.map(convert_isbn)
@@ -230,9 +233,9 @@ def remove_books_without_ratings(df, n=3):
 
 
 def get_normalized_data(
-        books_path='../../data/BX-Books.csv',
-        users_path='../../data/BX-Users.csv',
-        ratings_path='../../data/BX-Book-Ratings.csv'):
+        books_path='./data/BX-Books.csv',
+        users_path='./data/BX-Users.csv',
+        ratings_path='./data/BX-Book-Ratings.csv'):
     books = get_books(books_path)
     users = get_users(users_path)
     ratings = get_ratings(ratings_path)
@@ -240,35 +243,42 @@ def get_normalized_data(
     explicit_ratings = ratings[ratings.book_rating != 0]
     filtered_ratings = filter_ratings(explicit_ratings, books)
 
+    logging.info("normalizing books")
     books = add_mean_and_count(books, filtered_ratings)
     books = normalize_year_of_publication(books)
     books = normalize_publisher(books)
 
+    logging.info("normalizing user")
     users = add_user_mean_and_count(users, filtered_ratings)
     users = normalize_country(users)
     users = normalize_state(users)
 
+    logging.info("normalizing ratings")
     normalized_ratings = normalize_ratings_for_user(filtered_ratings, users)
 
     return books, users, normalized_ratings
 
 
 def hot_encode_publisher(books):
+    logging.info("hot encoding publisher")
     encoded_books = pd.get_dummies(books, columns=['publisher'], prefix='publisher')
     return encoded_books
 
 
 def hot_encode_country(users):
+    logging.info("hot encoding country")
     encoded_users = pd.get_dummies(users, columns=['country'], prefix='country')
     return encoded_users
 
 
 def hot_encode_state(users):
+    logging.info("hot encoding state")
     encoded_users = pd.get_dummies(users, columns=['state'], prefix='state')
     return encoded_users
 
 
 def hot_encode_data(books, users):
+    logging.info("hot encoding data")
     books = hot_encode_publisher(books)
     users = hot_encode_country(users)
     users = hot_encode_state(users)
@@ -280,5 +290,76 @@ def get_lowest_rated_books(books, ratings, n=10):
     lowest_rated_books = lowest_rated_books[:n]
     lowest_rated_books = lowest_rated_books.reset_index()
     lowest_rated_books = lowest_rated_books.merge(books, on='isbn')
-
     return lowest_rated_books
+
+
+def recommend_items_rf(userId, age, locationCountry, locationState=None, locationCity=None, itemId=None, numberOfItems=10):
+    from sklearn.model_selection import train_test_split
+    from sklearn.ensemble import RandomForestClassifier
+
+    # books, users, ratings = get_normalized_data()
+    books, users, ratings = get_normalized_data(books_path='../../data/BX-Books.csv',
+                                                users_path='../../data/BX-Users.csv',
+                                                ratings_path='../../data/BX-Book-Ratings.csv')
+
+    limit = 1000
+    logging.info("limiting data to {} ratings".format(limit))
+    df_ratings = ratings.groupby('isbn13').user_id.count().sort_values(ascending=False)
+    df_ratings = df_ratings[:limit]
+    df_ratings = df_ratings.reset_index()
+
+    books = books[books.isbn13.isin(df_ratings.isbn13)]
+    users = users[users.user_id.isin(df_ratings.user_id)]
+    books, users = hot_encode_data(books, users)
+
+    # RF Features: Country, State, Age, Year-of-Publication, Publisher
+    tmp_users = users.filter(regex="user_id|age|country_|state_", axis=1)
+    tmp_books = books.filter(regex="isbn13|normalized_year_of_publication|publisher_", axis=1)
+    # df = df_ratings.filter(regex="isbn13|user_id|normalized_rating", axis=1)
+    df = df_ratings.filter(regex="isbn13|user_id|book_rating", axis=1)
+    df = df.merge(tmp_users)
+    df = df.merge(tmp_books)
+
+    # Features
+    X = df.drop(['user_id', 'isbn13', 'book_rating'], axis=1)
+    # Prediction
+    Y = df['book_rating']
+
+    logging.info("splitting training/testing data")
+    X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.30)
+
+    from os.path import exists
+    import pickle
+
+    # Load the model from the file
+    model_file = "rf-recommendItems.pkl"
+    if exists(model_file):
+        logging.info("loading model", model_file)
+        with open(model_file, "rb") as file:
+            rfc = pickle.load(file)
+    else:
+        logging.info("Creating new model")
+        rfc = RandomForestClassifier(n_estimators=100, min_weight_fraction_leaf=0, n_jobs=3, random_state=1)
+
+    rfc.fit(X_train, y_train)
+
+    # Save the model to a file
+    with open(model_file, "wb") as file:
+        logging.info("Saving model", model_file)
+        pickle.dump(rfc, file)
+
+    logging.info("Running prediction")
+    rfc_pred = rfc.predict(X_test)
+
+    print(rfc_pred)
+
+    # ratings = pd.DataFrame(rfc_pred, columns=["book_rating"])
+    # predictions = pd.concat([y_test[:3], X_test[:3]], axis=1)
+    # predictions = pd.concat([ratings, X_test], axis=1)
+    # predictions = predictions.filter(regex="isbn13|book_rating", axis=1)
+    # predictions
+
+    return rfc_pred.tolist()
+
+
+rfc_pred = recommend_items(1, 25, "usa")

@@ -7,6 +7,7 @@ from flask import Flask
 from flask_restful import Api, Resource, reqparse
 
 from Utils import get_books, get_ratings, filter_ratings, get_least_rated_books, get_most_rated_books, add_mean_and_count
+from Utils import recommend_items_rf
 
 app = Flask(__name__)
 api = Api(app)
@@ -139,13 +140,13 @@ class SimilarBooks(Resource):
 # Get recommend items
 class RecommendItems(Resource):
     rec_items_args = reqparse.RequestParser()
-    rec_items_args.add_argument("userId", type=int, help="Invalid parameters")
-    rec_items_args.add_argument("age", type=int, help="Invalid parameters", required=True)
-    rec_items_args.add_argument("locationCountry", type=str, help="Invalid parameters", required=True)
-    rec_items_args.add_argument("locationState", type=str, help="Invalid parameters")
-    rec_items_args.add_argument("locationCity", type=str, help="Invalid parameters")
-    rec_items_args.add_argument("itemId", type=str, help="Invalid parameters")
-    rec_items_args.add_argument("numberOfItems", type=int, help="Invalid parameters", default=10)
+    rec_items_args.add_argument("userId", type=int, help="The id of the current user")
+    rec_items_args.add_argument("age", type=int, help="The age of the user", required=True)
+    rec_items_args.add_argument("locationCountry", type=str, help="The Country of the user", required=True)
+    rec_items_args.add_argument("locationState", type=str, help="The State of the user")
+    rec_items_args.add_argument("locationCity", type=str, help="The City of the user")
+    rec_items_args.add_argument("itemId", type=int, help="The ID of the book (isbn10)")
+    rec_items_args.add_argument("numberOfItems", type=int, help="Number of recommendations to provide", default=10)
 
     def get(self):
         args = self.rec_items_args.parse_args()
@@ -155,6 +156,23 @@ class RecommendItems(Resource):
         return parsed
 
 
+# Evaluation API
+class RecommendItemsRF(Resource):
+    args = reqparse.RequestParser()
+    args.add_argument("userId", type=int, help="The id of the current user")
+    args.add_argument("age", type=int, help="The age of the user", required=True)
+    args.add_argument("locationCountry", type=str, help="The Country of the user", required=True)
+    args.add_argument("locationState", type=str, help="The State of the user")
+    args.add_argument("locationCity", type=str, help="The City of the user")
+    args.add_argument("itemId", type=int, help="The ID of the book (isbn10)")
+    args.add_argument("numberOfItems", type=int, help="Number of recommendations to provide", default=10)
+
+    def post(self):
+        args = self.args.parse_args()
+        return recommend_items_rf(args.userId, args.age, args.locationCountry, args.locationState, args.locationCity, args.itemId,args. numberOfItems)
+
+
+# Frontend APIs
 api.add_resource(RegisterUser, "/registerUser")
 api.add_resource(RateBook, "/rateBook")
 api.add_resource(UserRecommendations, "/userRecommendations")
@@ -162,6 +180,7 @@ api.add_resource(TopInCountry, "/topInCountry")
 api.add_resource(Browse, "/browse")
 api.add_resource(SimilarBooks, "/similarBooks")
 api.add_resource(RecommendItems, "/recommendItems")
+api.add_resource(RecommendItemsRF, "/recommendItemsRF")
 
 
 @app.after_request
@@ -171,6 +190,9 @@ def after_request(response):
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
     return response
 
+
+# Evaluation APIs
+api.add_resource(RecommendItems, "/recommendItems")
 
 if __name__ == "__main__":
     app.run(debug=True)

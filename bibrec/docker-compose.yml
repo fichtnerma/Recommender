@@ -9,7 +9,7 @@ services:
       - ./server:/api/src
       - ../data:/api/src/data
     environment:
-      - FLASK_ENV=development
+      - FLASK_DEBUG=true
       - FLASK_APP=app.py
     expose:
       - 4000
