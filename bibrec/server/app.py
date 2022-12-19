@@ -1,3 +1,4 @@
+import json
 import random
 from collections import defaultdict
 
@@ -22,6 +23,8 @@ books_with_mean_count = add_mean_and_count(books, filtered_ratings)
 books_with_mean_count.rename(columns={'isbn': 'isbn10', 'book_title': 'title', 'book_author': 'author', 'year_of_publication': 'pubYear', 'image_url_s': 'imageUrlSmall',
                                       'image_url_m': 'imageUrlMedium', 'image_url_l': 'imageUrlLarge'}, inplace=True)
 
+# models
+cbf = ContentBasedFiltering(bookData)
 
 # Register User
 class RegisterUser(Resource):
@@ -128,15 +131,17 @@ class SimilarBooks(Resource):
     similar_Books_args.add_argument("isbn10", type=str, help="The ISBN of the book for which similar books should be found", required=True)
     similar_Books_args.add_argument("userId", type=int, help="The id of the current user", default=0)
     similar_Books_args.add_argument("recommendationCount", type=int, help="The amount of recommendations", default=5)
-    cbf = ContentBasedFiltering(bookData)
 
     def post(self):
         args = self.similar_Books_args.parse_args()
-        isbn13 = convert_isbn(args["isbn10"])
+        isbn13 = str(convert_isbn(args["isbn10"]))
         similar_books = self.cbf.recommend_tf_idf(isbn13)
-        parsed = json.loads(similar_books)
-        return parsed
-        # return "Similar books"
+        app.logger.info("Sent isbn: " + args["isbn10"])
+        app.logger.info("Similar books for isbn: " + isbn13 + " are:")
+        app.logger.info(similar_books)
+        similar_books = books.merge(similar_books, on='isbn13', how='inner')
+        parsed = similar_books.to_json(orient='records')
+        return json.loads(parsed)
 
 
 # Get recommend items
@@ -152,7 +157,15 @@ class RecommendItems(Resource):
 
     def post(self):
         args = self.rec_items_args.parse_args()
-
+        isbn = args["itemId"]
+        isbn13 = str(convert_isbn(args["itemId"]))
+        age = args["age"]
+        country = args["locationCountry"]
+        state = args["locationState"]
+        city = args["locationCity"]
+        recommendations = []
+        if args["itemId"]:
+            cbf.recommend_tf_idf(args["itemId"])
         json_str = books_with_mean_count.sample(n=args["numberOfItems"]).to_json(orient='records')
         parsed = json.loads(json_str)
         return parsed
