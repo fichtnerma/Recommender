@@ -11,6 +11,16 @@ from Utils import get_books, get_ratings, filter_ratings, get_least_rated_books,
 app = Flask(__name__)
 api = Api(app)
 
+users_dict = defaultdict(list)
+books = get_books()
+ratings = get_ratings()
+explicit_ratings = ratings[ratings.book_rating != 0]
+filtered_ratings = filter_ratings(explicit_ratings, books)
+books_with_mean_count = add_mean_and_count(books, filtered_ratings)
+
+books_with_mean_count.rename(columns={'isbn': 'isbn10', 'book_title': 'title', 'book_author': 'author', 'year_of_publication': 'pubYear', 'image_url_s': 'imageUrlSmall',
+                                      'image_url_m': 'imageUrlMedium', 'image_url_l': 'imageUrlLarge'}, inplace=True)
+
 
 # Register User
 class RegisterUser(Resource):
@@ -27,13 +37,11 @@ class RegisterUser(Resource):
     register_user_args.add_argument(city_key, type=str, help="City of the user")
     register_user_args.add_argument(age_key, type=int, help="Age of the user")
 
-    users_dict = defaultdict(list)
-
     def post(self):
         args = self.register_user_args.parse_args()
 
         # check if user already exist
-        for uid, user_info in self.users_dict.items():
+        for uid, user_info in users_dict.items():
             if user_info[self.username_key] == args[self.username_key]:
                 # update user info if new info us submitted
                 user_info[self.country_key] = args[self.country_key]
@@ -51,7 +59,7 @@ class RegisterUser(Resource):
         # add a new user
         user_id = random.getrandbits(32)
         user_info = args.copy()
-        self.users_dict[user_id] = user_info
+        users_dict[user_id] = user_info
         args[self.user_id_key] = user_id
 
         app.logger.info(f'New user named „{user_info[self.username_key]}“ registered')
@@ -68,17 +76,7 @@ class RateBook(Resource):
     def post(self):
         args = self.rate_book_args.parse_args()
 
-        return f'Book with isbn {args["isbn10"]} rated successfully', 200
-
-
-books = get_books()
-ratings = get_ratings()
-explicit_ratings = ratings[ratings.book_rating != 0]
-filtered_ratings = filter_ratings(explicit_ratings, books)
-books_with_mean_count = add_mean_and_count(books, filtered_ratings)
-
-books_with_mean_count.rename(columns={'isbn': 'isbn10', 'book_title': 'title', 'book_author': 'author', 'year_of_publication': 'pubYear', 'image_url_s': 'imageUrlSmall',
-                                      'image_url_m': 'imageUrlMedium', 'image_url_l': 'imageUrlLarge'}, inplace=True)
+        return f'Book with isbn {args["isbn10"]} rated successfully as {args["rating"]}', 200
 
 
 # Get recommendations of a user
