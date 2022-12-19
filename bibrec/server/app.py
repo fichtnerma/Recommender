@@ -1,13 +1,14 @@
 
+import json
 import random
 from collections import defaultdict
 
 import pandas as pd
+from content_based_filtering import ContentBasedFiltering
 from flask import Flask
 from flask_restful import Api, Resource, reqparse
 
-from Utils import get_books, get_ratings, filter_ratings, get_least_rated_books, get_most_rated_books, add_mean_and_count
-from Utils import recommend_items_rf
+from Utils import *
 
 app = Flask(__name__)
 api = Api(app)
@@ -15,6 +16,7 @@ api = Api(app)
 users_dict = defaultdict(list)
 books = get_books()
 ratings = get_ratings()
+bookData = pd.read_csv("./data/editions_dump.csv", sep=",", encoding="utf-8")
 explicit_ratings = ratings[ratings.book_rating != 0]
 filtered_ratings = filter_ratings(explicit_ratings, books)
 books_with_mean_count = add_mean_and_count(books, filtered_ratings)
@@ -126,15 +128,17 @@ class Browse(Resource):
 class SimilarBooks(Resource):
     similar_Books_args = reqparse.RequestParser()
     similar_Books_args.add_argument("isbn10", type=str, help="The ISBN of the book for which similar books should be found", required=True)
-    similar_Books_args.add_argument("userId", type=int, help="The id of the current user")
+    similar_Books_args.add_argument("userId", type=int, help="The id of the current user", default=0)
     similar_Books_args.add_argument("recommendationCount", type=int, help="The amount of recommendations", default=5)
+    cbf = ContentBasedFiltering(bookData)
 
     def post(self):
         args = self.similar_Books_args.parse_args()
-
-        json_str = books_with_mean_count.sample(n=args["recommendationCount"]).to_json(orient='records')
-        parsed = json.loads(json_str)
+        isbn13 = convert_isbn(args["isbn10"])
+        similar_books = self.cbf.recommend_tf_idf(isbn13)
+        parsed = json.loads(similar_books)
         return parsed
+        # return "Similar books"
 
 
 # Get recommend items

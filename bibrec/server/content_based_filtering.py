@@ -5,7 +5,7 @@ from sklearn.metrics.pairwise import linear_kernel
 class ContentBasedFiltering:
     def __init__(self, bookData):
         books = get_books()
-        self.CHUNK_QUANTITY = 10
+        self.CHUNK_QUANTITY = 50
         self.tfidf = TfidfVectorizer(stop_words='english')
         self.bookData = bookData
         #data cleaning
