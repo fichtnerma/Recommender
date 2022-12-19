@@ -16,17 +16,17 @@ services:
     ports:
       - "4000:4000"
 
-#  BibRecClient:
-#    image: bibrec-client:latest
-#    build: ./client
-#    command: npm run dev
-#    volumes:
-#      - ./client/:/app
-#    ports:
-#      - "3000:3000"
-#    depends_on:
-#      - BibRecServer
-#    environment:
-#      - HOST=0.0.0.0
-#      - CHOKIDAR_USEPOLLING=true
+  BibRecClient:
+   image: bibrec-client:latest
+   build: ./client
+   command: npm run dev
+   volumes:
+     - ./client/:/app
+   ports:
+     - "3000:3000"
+   depends_on:
+     - BibRecServer
+   environment:
+     - HOST=0.0.0.0
+     - CHOKIDAR_USEPOLLING=true
 
