@@ -36,7 +36,7 @@ class ContentBasedFiltering:
         return similarity_matrix
 
 
-    def recommend_tf_idf(self, isbn13):
+    def recommend_tf_idf(self, isbn13, n=15):
         book_indices = []
         for i in range(0, self.CHUNK_QUANTITY):
             if(isbn13 in self.mappings[i].index):
@@ -47,7 +47,7 @@ class ContentBasedFiltering:
                 similarity_score = list(enumerate(similarity_matrix[book_index]))
                 # Sort the books based on the similarity scores
                 similarity_score = sorted(similarity_score, key=lambda x: x[1], reverse=True)
-                similarity_score = similarity_score[1:15]
+                similarity_score = similarity_score[1:n+1]
                 book_indices.append([i[0] for i in similarity_score])
         if(len(book_indices) == 0):
             return None

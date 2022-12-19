@@ -135,7 +135,7 @@ class SimilarBooks(Resource):
     def post(self):
         args = self.similar_Books_args.parse_args()
         isbn13 = str(convert_isbn(args["isbn10"]))
-        similar_books = self.cbf.recommend_tf_idf(isbn13)
+        similar_books = cbf.recommend_tf_idf(isbn13, args["recommendationCount"])
         app.logger.info("Sent isbn: " + args["isbn10"])
         app.logger.info("Similar books for isbn: " + isbn13 + " are:")
         app.logger.info(similar_books)
@@ -152,20 +152,36 @@ class RecommendItems(Resource):
     rec_items_args.add_argument("locationCountry", type=str, help="The Country of the user", required=True)
     rec_items_args.add_argument("locationState", type=str, help="The State of the user")
     rec_items_args.add_argument("locationCity", type=str, help="The City of the user")
-    rec_items_args.add_argument("itemId", type=int, help="The ID of the book (isbn10)")
+    rec_items_args.add_argument("itemId", type=str, help="The ID of the book (isbn10)")
     rec_items_args.add_argument("numberOfItems", type=int, help="Number of recommendations to provide", default=10)
 
     def post(self):
         args = self.rec_items_args.parse_args()
         isbn = args["itemId"]
-        isbn13 = str(convert_isbn(args["itemId"]))
+        userId = args["userId"]
         age = args["age"]
         country = args["locationCountry"]
         state = args["locationState"]
         city = args["locationCity"]
-        recommendations = []
-        if args["itemId"]:
-            cbf.recommend_tf_idf(args["itemId"])
+        nItems = args["numberOfItems"]
+        isbn13 = str(convert_isbn(args["itemId"]))
+        cbf_recommendations = []
+        rf_recommendations = []
+        if isbn:
+            cbf_recommendations.append(cbf.recommend_tf_idf(isbn13, nItems))
+        if userId:
+            rated_books = explicit_ratings[explicit_ratings["user_id"] == userId]["isbn13"].tolist() 
+            for book in rated_books:
+                cbf_recommendations.append(cbf.recommend_tf_idf(book, 3))
+        if age and country and state and city:
+            rf_recommendations = rf_recommendations.concat([rf_recommendations,cbf.recommend_tf_idf(isbn13, nItems)])
+
+        rec_cbf = []
+        for book in cbf_recommendations:
+            rec_cbf.append(book["isbn13"].tolist())
+        rec_cbf = list(dict.fromkeys(flatten(rec_cbf)))
+        app.logger.info("Recommendations for user: ")
+        app.logger.info(rec_cbf)
         json_str = books_with_mean_count.sample(n=args["numberOfItems"]).to_json(orient='records')
         parsed = json.loads(json_str)
         return parsed

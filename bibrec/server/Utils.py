@@ -360,3 +360,6 @@ def recommend_items_rf(userId, age, locationCountry, locationState=None, locatio
     # predictions
 
     return rfc_pred.tolist()
+
+def flatten(l):
+    return [item for sublist in l for item in sublist]
