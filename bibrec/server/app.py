@@ -1,4 +1,4 @@
-import json
+
 import random
 from collections import defaultdict
 
@@ -189,10 +189,6 @@ def after_request(response):
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
     return response
-
-
-# Evaluation APIs
-api.add_resource(RecommendItems, "/recommendItems")
 
 if __name__ == "__main__":
     app.run(debug=True)
