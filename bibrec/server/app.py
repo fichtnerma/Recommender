@@ -2,18 +2,19 @@ import json
 import random
 from collections import defaultdict
 
-import pandas as pd
-from content_based_filtering import ContentBasedFiltering
 from flask import Flask
 from flask_restful import Api, Resource, reqparse
 
 from Utils import *
+from content_based_filtering import ContentBasedFiltering
 
 app = Flask(__name__)
 api = Api(app)
 
 users_dict = defaultdict(list)
+users_ratings = pd.DataFrame(columns=["user_id", "isbn", "book_rating"])
 books = get_books()
+books = filter_books(books)
 ratings = get_ratings()
 bookData = pd.read_csv("./data/editions_dump.csv", sep=",", encoding="utf-8")
 explicit_ratings = ratings[ratings.book_rating != 0]
@@ -25,6 +26,7 @@ books_with_mean_count.rename(columns={'isbn': 'isbn10', 'book_title': 'title', '
 
 # models
 cbf = ContentBasedFiltering(bookData)
+
 
 # Register User
 class RegisterUser(Resource):
@@ -71,14 +73,31 @@ class RegisterUser(Resource):
 
 
 # Rate book
-class RateBook(Resource):
-    rate_book_args = reqparse.RequestParser()
-    rate_book_args.add_argument("userId", type=int, help="User id is required and should be a number", required=True)
-    rate_book_args.add_argument("isbn10", type=str, help="ISBN10 of the book to rate is required", required=True)
-    rate_book_args.add_argument("rating", type=int, help="Rating for the book is required and should be a number", required=True)
+class Ratings(Resource):
+
+    def get(self):
+        get_ratings_args = reqparse.RequestParser()
+        get_ratings_args.add_argument("userId", type=int, help="User id is required and should be a number", required=True, location="args")
+        args = get_ratings_args.parse_args()
+
+        user_ratings = users_ratings[users_ratings["user_id"] == args["userId"]]
+        user_ratings.rename(columns={'isbn': 'isbn10', 'user_id': 'userId', 'book_rating': 'rating'}, inplace=True)
+
+        json_str = user_ratings.to_json(orient='records')
+        parsed = json.loads(json_str)
+        return parsed
 
     def post(self):
-        args = self.rate_book_args.parse_args()
+        rate_book_args = reqparse.RequestParser()
+        rate_book_args.add_argument("userId", type=int, help="User id is required and should be a number", required=True)
+        rate_book_args.add_argument("isbn10", type=str, help="ISBN10 of the book to rate is required", required=True)
+        rate_book_args.add_argument("rating", type=int, help="Rating for the book is required and should be a number", required=True)
+        args = rate_book_args.parse_args()
+
+        global users_ratings
+        user_rating = pd.DataFrame.from_dict({"user_id": [args["userId"]], "isbn": [args["isbn10"]], "book_rating": [args["rating"]]})
+        new = pd.concat([users_ratings, user_rating], ignore_index=True)
+        users_ratings = new
 
         return f'Book with isbn {args["isbn10"]} rated successfully as {args["rating"]}', 200
 
@@ -113,8 +132,11 @@ class TopInCountry(Resource):
 
 # Get a mix of most popular and least popular items
 class Browse(Resource):
-    most_rated = get_most_rated_books(books_with_mean_count, 80)
-    least_rated = get_least_rated_books(books_with_mean_count, 100)
+    most_rated = get_most_rated_books(books_with_mean_count, 125)
+    most_rated = most_rated.sort_values('rating_mean', ascending=False)
+    most_rated = most_rated[:80]
+
+    least_rated = get_least_rated_books(books_with_mean_count, 200)
 
     def post(self):
         least_rated_sample = self.least_rated.sample(n=20)
@@ -147,15 +169,15 @@ class SimilarBooks(Resource):
 # Get recommend items
 class RecommendItems(Resource):
     rec_items_args = reqparse.RequestParser()
-    rec_items_args.add_argument("userId", type=int, help="The id of the current user")
-    rec_items_args.add_argument("age", type=int, help="The age of the user", required=True)
-    rec_items_args.add_argument("locationCountry", type=str, help="The Country of the user", required=True)
-    rec_items_args.add_argument("locationState", type=str, help="The State of the user")
-    rec_items_args.add_argument("locationCity", type=str, help="The City of the user")
-    rec_items_args.add_argument("itemId", type=str, help="The ID of the book (isbn10)")
-    rec_items_args.add_argument("numberOfItems", type=int, help="Number of recommendations to provide", default=10)
+    rec_items_args.add_argument("userId", type=int, help="The id of the current user", location="args")
+    rec_items_args.add_argument("age", type=int, help="The age of the user", required=True, location="args")
+    rec_items_args.add_argument("locationCountry", type=str, help="The Country of the user", required=True, location="args")
+    rec_items_args.add_argument("locationState", type=str, help="The State of the user", location="args")
+    rec_items_args.add_argument("locationCity", type=str, help="The City of the user", location="args")
+    rec_items_args.add_argument("itemId", type=str, help="The ID of the book (isbn10)", location="args")
+    rec_items_args.add_argument("numberOfItems", type=int, help="Number of recommendations to provide", default=10, location="args")
 
-    def post(self):
+    def get(self):
         args = self.rec_items_args.parse_args()
         isbn = args["itemId"]
         userId = args["userId"]
@@ -170,11 +192,11 @@ class RecommendItems(Resource):
         if isbn:
             cbf_recommendations.append(cbf.recommend_tf_idf(isbn13, nItems))
         if userId:
-            rated_books = explicit_ratings[explicit_ratings["user_id"] == userId]["isbn13"].tolist() 
+            rated_books = explicit_ratings[explicit_ratings["user_id"] == userId]["isbn13"].tolist()
             for book in rated_books:
                 cbf_recommendations.append(cbf.recommend_tf_idf(book, 3))
         if age and country and state and city:
-            rf_recommendations = rf_recommendations.concat([rf_recommendations,cbf.recommend_tf_idf(isbn13, nItems)])
+            rf_recommendations = rf_recommendations.concat([rf_recommendations, cbf.recommend_tf_idf(isbn13, nItems)])
 
         rec_cbf = []
         for book in cbf_recommendations:
@@ -205,7 +227,7 @@ class RecommendItemsRF(Resource):
 
 # Frontend APIs
 api.add_resource(RegisterUser, "/registerUser")
-api.add_resource(RateBook, "/rateBook")
+api.add_resource(Ratings, "/ratings")
 api.add_resource(UserRecommendations, "/userRecommendations")
 api.add_resource(TopInCountry, "/topInCountry")
 api.add_resource(Browse, "/browse")
@@ -220,6 +242,7 @@ def after_request(response):
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
     return response
+
 
 if __name__ == "__main__":
     app.run(debug=True)

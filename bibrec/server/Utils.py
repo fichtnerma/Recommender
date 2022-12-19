@@ -1,4 +1,5 @@
 import logging
+
 import numpy as np
 import pandas as pd
 
@@ -137,9 +138,18 @@ def assign_popular_based_score(rating_df, item_df, user_col, item_col, rating_co
 
     return popular_items
 
-# filtern von ratings, die nicht in books sind
+
+# filter duplicate books
+def filter_books(books):
+    books['isbn'] = books['isbn'].apply(lambda x: x.upper())
+    return books.drop_duplicates(subset=["isbn"], ignore_index=True)
+
+
+# filter ratings which aren't for books in the set
 def filter_ratings(df, books):
     explicit_filtered_ratings = df[df.isbn13.isin(books.isbn13)]
+    # TODO: Fix caveat warning
+    explicit_filtered_ratings['isbn'] = explicit_filtered_ratings['isbn'].apply(lambda x: x.upper())
     return explicit_filtered_ratings
 
 
@@ -222,6 +232,14 @@ def get_least_rated_books(df, n=10) -> pd.DataFrame:
     return least_rated_books
 
 
+def get_lowest_rated_books(books, ratings, n=10):
+    lowest_rated_books = ratings.groupby('isbn').book_rating.mean().sort_values(ascending=True)
+    lowest_rated_books = lowest_rated_books[:n]
+    lowest_rated_books = lowest_rated_books.reset_index()
+    lowest_rated_books = lowest_rated_books.merge(books, on='isbn')
+    return lowest_rated_books
+
+
 def remove_users_without_ratings(df, n=3):
     users_with_ratings = df[df["count"] >= n]
     return users_with_ratings
@@ -283,14 +301,6 @@ def hot_encode_data(books, users):
     users = hot_encode_country(users)
     users = hot_encode_state(users)
     return books, users
-
-
-def get_lowest_rated_books(books, ratings, n=10):
-    lowest_rated_books = ratings.groupby('isbn').book_rating.mean().sort_values(ascending=True)
-    lowest_rated_books = lowest_rated_books[:n]
-    lowest_rated_books = lowest_rated_books.reset_index()
-    lowest_rated_books = lowest_rated_books.merge(books, on='isbn')
-    return lowest_rated_books
 
 
 def recommend_items_rf(userId, age, locationCountry, locationState=None, locationCity=None, itemId=None, numberOfItems=10):
@@ -360,6 +370,7 @@ def recommend_items_rf(userId, age, locationCountry, locationState=None, locatio
     # predictions
 
     return rfc_pred.tolist()
+
 
 def flatten(l):
     return [item for sublist in l for item in sublist]

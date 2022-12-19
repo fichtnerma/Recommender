@@ -1,6 +1,7 @@
 import React from "react";
-import BookItem, { Book } from "./BookItem";
+import BookItem from "./BookItem";
 import "./Books.scss";
+import { Book } from "../../types/types";
 
 interface BookRowProps {
 	books: Book[];

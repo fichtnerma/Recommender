@@ -44,6 +44,9 @@
 				width: 100%;
 				border: 2px solid black;
 				margin-bottom: 0.25rem;
+				aspect-ratio: 1 / 1.5;
+				object-fit: cover;
+				min-height: 250px;
 			}
 
 			span {

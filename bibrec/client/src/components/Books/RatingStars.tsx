@@ -1,4 +1,4 @@
-import React, { CSSProperties, useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./Rating.scss";
 import { User } from "../../App";
 
@@ -14,11 +14,15 @@ type RatingProps = {
 	onRate: (rating: number) => void;
 }
 
-export default function Rating({ rating, canRate, user, onRate }: RatingProps) {
+export default function RatingStars({ rating, canRate, user, onRate }: RatingProps) {
 	const maxRating = 10;
 	const [currentRating, setCurrentRating] = useState(rating);
 
-	const calculatedWidth = `${(1 - rating / maxRating) * 100}%`;
+	useEffect(() => {
+		rating && setCurrentRating(rating);
+	}, [rating]);
+
+	const calculatedWidth = `${(1 - currentRating / maxRating) * 100}%`;
 
 	return (
 		<div className="rating">

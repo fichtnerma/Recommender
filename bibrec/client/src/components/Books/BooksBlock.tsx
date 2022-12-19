@@ -1,7 +1,7 @@
-import { Book } from "./BookItem";
 import BookRow from "./BookRow";
 import React, { useState } from "react";
 import LoadingIndicator from "../Utils/LoadingIndicator";
+import { Book } from "../../types/types";
 
 interface ItemsBlockProps {
 	title: string;

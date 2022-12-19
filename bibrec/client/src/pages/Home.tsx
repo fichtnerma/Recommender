@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import BookDetailModal from "../components/BookDetails/BookDetailModal";
-import { Book } from "../components/Books/BookItem";
 import "./Home.scss";
 import { User } from "../App";
 import { BooksBlock } from "../components/Books/BooksBlock";
 import axios from "axios";
+import { Book, Rating } from "../types/types";
 
 interface HomeProps {
 	user?: User;
@@ -14,6 +14,7 @@ export default function Home({ user }: HomeProps) {
 	const [userRecommendations, setUserRecommendations] = useState<Book[]>([]);
 	const [topInCountry, setTopInCountry] = useState<Book[]>([]);
 	const [browseBooks, setBrowseBooks] = useState<Book[]>([]);
+	const [userRatings, setUserRatings] = useState<Rating[]>([]);
 	const [modalVisible, setModalVisible] = useState(false);
 	const [selectedBook, setSelectedBook] = useState<undefined | Book>(
 		undefined
@@ -42,6 +43,11 @@ export default function Home({ user }: HomeProps) {
 						setBrowseBooks(res.data);
 					});
 
+				axios.get("http://localhost:4000/ratings", { params: { userId: user.id }})
+					.then((res) => {
+						setUserRatings(res.data);
+					});
+
 			} catch (e) {
 				console.error(e);
 			}
@@ -60,6 +66,8 @@ export default function Home({ user }: HomeProps) {
 					setSelectedBook={setSelectedBook}
 					selectedBook={selectedBook}
 					onClose={setModalVisible}
+					userRatings={userRatings}
+					setUserRatings={setUserRatings}
 					user={user}
 				/>
 			) : null}
