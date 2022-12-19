@@ -80,11 +80,59 @@ def convert_isbn(id):
             check_digit = 0
         isbn += str(check_digit)
         return isbn
-    elif len(isbn) == 13:
-        return isbn
     else:
         return np.nan
 
+
+def weighted_rating(v, m, R, C):
+    """
+    Calculate the weighted rating
+
+    Args:
+    v -> average rating for each item (float)
+    m -> minimum votes required to be classified as popular (float)
+    R -> average rating for the item (pd.Series)
+    C -> average rating for the whole dataset (pd.Series)
+
+    Returns:
+    pd.Series
+    """
+    return ((v / (v + m)) * R) + ((m / (v + m)) * C)
+
+
+def assign_popular_based_score(rating_df, item_df, user_col, item_col, rating_col):
+    """
+
+    Assigned popular based score.
+
+    Args:
+    rating -> pd.DataFrame contains ['item_id', 'rating'] for each user.
+
+    Returns
+    popular_items -> pd.DataFrame contains item and weighted score.
+    """
+
+    # pre processing
+    vote_count = rating_df.groupby(item_col, as_index=False).agg(
+        {user_col: "count", rating_col: "mean"}
+    )
+    vote_count.columns = [item_col, "vote_count", "avg_rating"]
+
+    # calculate input parameters
+    C = np.mean(vote_count["avg_rating"])
+    m = np.percentile(vote_count["vote_count"], 70)
+    vote_count = vote_count[vote_count["vote_count"] >= m]
+    R = vote_count["avg_rating"]
+    v = vote_count["vote_count"]
+    vote_count["weighted_rating"] = weighted_rating(v, m, R, C)
+
+    # post processing
+    vote_count = vote_count.merge(item_df, on=[item_col], how="left")
+    popular_items = vote_count.loc[
+                    :, [item_col, "vote_count", "avg_rating", "weighted_rating"]
+                    ]
+
+    return popular_items
 
 # filtern von ratings, die nicht in books sind
 def filter_ratings(df, books):
