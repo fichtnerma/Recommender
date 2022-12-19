@@ -3,8 +3,8 @@ info:
   title: MMT-RecSys Semesterprojekt
   description: >-
     Here you find the endpoint specification in order to evaluation all projects
-    on the same conditions. Please feel free to use additional
-    endpoints for your front-end application.
+    on the same conditions. Please feel free to use additional endpoints for
+    your front-end application.
   contact:
     email: nw@cognify.ai
   version: 1.0.0
@@ -54,11 +54,10 @@ paths:
             type: string
         - name: itemId
           in: query
-          description: itemID included in data set
+          description: itemID included in data set as [ISBN-10](https://ean-code.eu/woraus-setzt-sich-eine-isbn-zusammen/)
           required: false
           schema:
-            type: integer
-            format: int64
+            type: string
         - name: numberOfItems
           in: query
           description: defines how many item recommendations are returned
@@ -91,11 +90,10 @@ components:
         itemIds:
           type: array
           items:
-            format: int64
-            type: integer
+            format: string
           example:
-            - 234
-            - 2532
-            - 1235
+            - '234'
+            - '2532'
+            - '1235'
       xml:
         name: itemRecommendations

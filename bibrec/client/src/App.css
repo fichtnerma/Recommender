@@ -1,36 +1,11 @@
 #root {
 	margin: 0 auto;
 	text-align: center;
+	width: 100%;
 }
 
-.logo {
-	height: 6rem;
-	padding: 1.5rem;
-	will-change: filter;
-}
-
-.logo:hover {
-	filter: drop-shadow(0 0 2rem #646cffaa);
-}
-
-.logo.react:hover {
-	filter: drop-shadow(0 0 2rem #61dafbaa);
-}
-
-@keyframes logo-spin {
-	from {
-		transform: rotate(0deg);
-	}
-
-	to {
-		transform: rotate(360deg);
-	}
-}
-
-@media (prefers-reduced-motion: no-preference) {
-	a:nth-of-type(2) .logo {
-		animation: logo-spin infinite 20s linear;
-	}
+.App {
+	width: 100%;
 }
 
 .card {

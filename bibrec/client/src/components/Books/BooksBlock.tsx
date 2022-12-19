@@ -1,6 +1,7 @@
 import { Book } from "./BookItem";
 import BookRow from "./BookRow";
 import React, { useState } from "react";
+import LoadingIndicator from "../Utils/LoadingIndicator";
 
 interface ItemsBlockProps {
 	title: string;
@@ -25,12 +26,14 @@ export function BooksBlock({ title, buttonText = "Mehr laden", items, onItemClic
 
 	return <div className={"booksBlockWrapper"}>
 		<h2>{title}</h2>
-		<BookRow
-			onItemClick={onItemClick}
-			books={items}
-			limit={currentLimit}/>
-		{remainingItemsCount ?
-			<button onClick={onButtonClick}>{buttonText}</button>
-			: null}
+		{items.length ? <>
+			<BookRow
+				onItemClick={onItemClick}
+				books={items}
+				limit={currentLimit}/>
+			{remainingItemsCount ?
+				<button onClick={onButtonClick}>{buttonText}</button>
+				: null}
+		</> : <LoadingIndicator/>}
 	</div>;
 }

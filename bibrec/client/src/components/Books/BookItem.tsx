@@ -8,21 +8,26 @@ interface BookItemProps {
 }
 
 export interface Book {
+	isbn10: string;
+	isbn13: number;
 	title: string;
-	imageURL: string;
+	imageUrlLarge: string;
+	imageUrlMedium: string;
+	imageUrlSmall: string;
 	author: string;
-	rating: number;
+	rating_count: number;
+	rating_mean: number;
 	pubYear: number;
 	publisher: string;
 }
 
 export default function BookItem({ book, onItemClick }: BookItemProps) {
-	const { title, rating, imageURL, author } = book;
+	const { title, rating_mean, imageUrlMedium, author } = book;
 
 	return (
 		<div className="bookItem element" onClick={() => onItemClick(true)}>
-			<img src={imageURL} alt={`The cover for the book „${title}“`}/>
-			<Rating rating={+rating} book={book}/>
+			<img src={imageUrlMedium} alt={`The cover for the book „${title}“`}/>
+			<Rating rating={+rating_mean}/>
 			<h3 className="bookTitle">{title}</h3>
 			<span>{author}</span>
 		</div>
