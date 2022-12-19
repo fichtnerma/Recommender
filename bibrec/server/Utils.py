@@ -360,6 +360,3 @@ def recommend_items_rf(userId, age, locationCountry, locationState=None, locatio
     # predictions
 
     return rfc_pred.tolist()
-
-
-rfc_pred = recommend_items(1, 25, "usa")
