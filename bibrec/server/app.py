@@ -1,4 +1,3 @@
-
 import random
 from collections import defaultdict
 
@@ -148,7 +147,7 @@ class RecommendItems(Resource):
     rec_items_args.add_argument("itemId", type=int, help="The ID of the book (isbn10)")
     rec_items_args.add_argument("numberOfItems", type=int, help="Number of recommendations to provide", default=10)
 
-    def get(self):
+    def post(self):
         args = self.rec_items_args.parse_args()
 
         json_str = books_with_mean_count.sample(n=args["numberOfItems"]).to_json(orient='records')
@@ -169,7 +168,7 @@ class RecommendItemsRF(Resource):
 
     def post(self):
         args = self.args.parse_args()
-        return recommend_items_rf(args.userId, args.age, args.locationCountry, args.locationState, args.locationCity, args.itemId,args. numberOfItems)
+        return recommend_items_rf(args.userId, args.age, args.locationCountry, args.locationState, args.locationCity, args.itemId, args.numberOfItems)
 
 
 # Frontend APIs
