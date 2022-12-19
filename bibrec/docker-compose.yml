@@ -16,7 +16,7 @@ services:
     ports:
       - "4000:4000"
 
- BibRecClient:
+  BibRecClient:
    image: bibrec-client:latest
    build: ./client
    command: npm run dev
