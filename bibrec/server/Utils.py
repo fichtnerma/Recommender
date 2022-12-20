@@ -3,13 +3,16 @@ import logging
 import numpy as np
 import pandas as pd
 
+
 def prepare_string(string):
     return str(string).strip().lower().replace('-', '_')
+
 
 def read_csv(path):
     df = pd.read_csv(path, sep=";", encoding="latin-1")
     df.columns = df.columns.map(prepare_string)
     return df
+
 
 def convert_isbn(id):
     isbn = str(id)
@@ -34,10 +37,12 @@ def convert_isbn(id):
     else:
         return np.nan
 
+
 # sanitize isbn and add isbn13
 def sanitize_isbn(df):
     df['isbn'] = df['isbn'].apply(lambda x: x.upper())
     df["isbn13"] = df.isbn.map(convert_isbn)
+    return df
 
 def sanitize_year_of_publication(books):
     books.year_of_publication = pd.to_numeric(books.year_of_publication, errors='coerce')
@@ -49,6 +54,7 @@ def sanitize_year_of_publication(books):
     books.dropna(subset=["year_of_publication"], inplace=True)
     books["year_of_publication"] = pd.to_numeric(books.year_of_publication, downcast="integer")
     return books
+
 
 def get_books(path="./data/BX-Books.csv"):
     logging.info("getting books from", path)
@@ -81,6 +87,7 @@ def sanitize_age(users):
     # print("used mean values", users.age.mean())
     return users
 
+
 def split_city_state_country(users):
     # separate location into city, state and country
     location_seperated = users.location.str.split(',', 2, expand=True)
@@ -94,6 +101,7 @@ def split_city_state_country(users):
     users.city.replace('', np.nan, inplace=True)
 
     return users
+
 
 def get_users(path="./data/BX-Users.csv"):
     logging.info("getting users from", path)
@@ -112,6 +120,7 @@ def get_explicit_ratings(ratings):
     explicit_ratings = ratings[ratings.book_rating != 0]
     return explicit_ratings
 
+
 def get_ratings(books, path="./data/BX-Book-Ratings.csv", explicitOnly=True):
     logging.info("getting ratings from", path)
     ratings = read_csv(path)
@@ -123,7 +132,7 @@ def get_ratings(books, path="./data/BX-Book-Ratings.csv", explicitOnly=True):
     ratings = ratings[ratings.isbn13.notna()]
     ratings = ratings[ratings.isbn13.isin(books.isbn13)]
 
-    if explicitOnly:
+    if explicitOnly == True:
         ratings = get_explicit_ratings(ratings)
 
     return ratings
@@ -203,7 +212,10 @@ def add_user_rating_mean_and_count(df, ratings):
     users_with_mean["user_mean"].fillna(0, inplace=True)
     return users_with_mean
 
+
 top_countries = None
+
+
 def normalize_country(df, all_countries, top_n=20):
     global top_countries
     if top_countries == None:
@@ -220,6 +232,8 @@ def normalize_country(df, all_countries, top_n=20):
 
 
 top_states = None
+
+
 def normalize_state(df, top_n=20):
     global top_states
     if top_states == None:
@@ -236,6 +250,8 @@ def normalize_state(df, top_n=20):
 
 
 top_publishers = None
+
+
 def normalize_publisher(df, top_n=20):
     global top_publishers
     if top_publishers == None:
@@ -299,11 +315,10 @@ def remove_books_without_ratings(df, n=3):
 def get_normalized_data(
         books_path='./data/BX-Books.csv',
         users_path='./data/BX-Users.csv',
-        ratings_path='./data/BX-Book-Ratings.csv'):
+        ratings_path='./data/BX-Book-Ratings.csv', explicitOnly=True):
     books = get_books(books_path)
     users = get_users(users_path)
-    ratings = get_ratings(ratings_path, books)
-
+    ratings = get_ratings(books, ratings_path, explicitOnly)
 
     logging.info("normalizing books")
     books = add_book_rating_mean_and_count(books, ratings)
@@ -332,6 +347,7 @@ def hot_encode_country(users):
     encoded_users = pd.get_dummies(users, columns=['country'], prefix='country')
     return encoded_users
 
+
 def hot_encode_state(users):
     logging.info("hot encoding state")
     encoded_users = pd.get_dummies(users, columns=['state'], prefix='state')
@@ -343,6 +359,7 @@ def hot_encode_books(books):
     books = hot_encode_publisher(books)
     return books
 
+
 def hot_encode_users(users):
     logging.info("hot encoding books")
     users = hot_encode_country(users)
@@ -350,8 +367,8 @@ def hot_encode_users(users):
     return users
 
 
-
-def recommend_items_rf(userId, age, locationCountry, locationState=None, locationCity=None, itemId=None, numberOfItems=10, retrain=False):
+def recommend_items_rf(userId, age, locationCountry, locationState=None, locationCity=None, itemId=None,
+                       numberOfItems=10, retrain=False):
     from sklearn.model_selection import train_test_split
     from sklearn.ensemble import RandomForestClassifier
 
@@ -441,7 +458,9 @@ def recommend_items_rf(userId, age, locationCountry, locationState=None, locatio
     logging.info("Predictions:", rfc_pred)
     return rfc_pred.tolist()
 
-# recommend_items_rf(1, 20, "usa")
+
+recommend_items_rf(1, 20, "usa")
+
 
 def flatten(l):
     return [item for sublist in l for item in sublist]
