@@ -52,14 +52,22 @@ def get_users(path="./data/BX-Users.csv"):
     return users
 
 
-def get_ratings(path="./data/BX-Book-Ratings.csv"):
+def get_ratings(books, path="./data/BX-Book-Ratings.csv", explicitOnly=True):
     logging.info("getting ratings from", path)
     ratings = pd.read_csv(path, sep=";", encoding="latin-1")
     ratings.columns = ratings.columns.map(prepare_string)
     ratings['isbn'] = ratings['isbn'].apply(lambda x: x.upper())
     ratings["isbn13"] = ratings.isbn.map(convert_isbn)
     ratings = ratings[ratings.isbn13.notna()]
+    ratings = ratings[ratings.isbn13.isin(books.isbn13)]
+    if explicitOnly:
+        ratings = get_explicit_ratings(ratings)
     return ratings
+
+
+def get_explicit_ratings(ratings):
+    explicit_ratings = ratings[ratings.book_rating != 0]
+    return explicit_ratings
 
 
 def prepare_string(string):
@@ -146,16 +154,8 @@ def filter_duplicate_books(books):
     return books.drop_duplicates(subset=["isbn"], ignore_index=True)
 
 
-# filter ratings which aren't for books in the set
-def filter_ratings(df, books):
-    explicit_filtered_ratings = df[df.isbn13.isin(books.isbn13)]
-    # TODO: Fix caveat warning
-    explicit_filtered_ratings['isbn'] = explicit_filtered_ratings['isbn'].apply(lambda x: x.upper())
-    return explicit_filtered_ratings
-
-
 # add mean and count to books
-def add_mean_and_count(df, ratings):
+def add_book_rating_mean_and_count(df, ratings):
     book_avg_rating = ratings.groupby('isbn13').book_rating.agg(['mean', 'count'])
     books_with_mean = df.merge(book_avg_rating, on='isbn13', how='left')
     books_with_mean.rename(columns={'mean': 'rating_mean', 'count': 'rating_count'}, inplace=True)
@@ -164,7 +164,7 @@ def add_mean_and_count(df, ratings):
 
 
 # add user mean and count to users
-def add_user_mean_and_count(df, ratings):
+def add_user_rating_mean_and_count(df, ratings):
     user_avg_rating = ratings.groupby('user_id').book_rating.agg(['mean', 'count'])
     users_with_mean = df.merge(user_avg_rating, on='user_id', how='left')
     users_with_mean.rename(columns={'mean': 'user_mean', 'count': 'user_count'}, inplace=True)
@@ -257,25 +257,22 @@ def get_normalized_data(
         ratings_path='./data/BX-Book-Ratings.csv'):
     books = get_books(books_path)
     users = get_users(users_path)
-    ratings = get_ratings(ratings_path)
-
-    explicit_ratings = ratings[ratings.book_rating != 0]
-    filtered_ratings = filter_ratings(explicit_ratings, books)
+    ratings = get_ratings(ratings_path, books)
 
     logging.info("normalizing books")
-    books = add_mean_and_count(books, filtered_ratings)
+    books = add_book_rating_mean_and_count(books, ratings)
     books = normalize_year_of_publication(books)
     books = normalize_publisher(books)
 
-    logging.info("normalizing user")
-    users = add_user_mean_and_count(users, filtered_ratings)
+    logging.info("normalizing users")
+    users = add_user_rating_mean_and_count(users, ratings)
     users = normalize_country(users)
     users = normalize_state(users)
 
     logging.info("normalizing ratings")
-    normalized_ratings = normalize_ratings_for_user(filtered_ratings, users)
+    ratings = normalize_ratings_for_user(ratings, users)
 
-    return books, users, normalized_ratings
+    return books, users, ratings
 
 
 def hot_encode_publisher(books):
