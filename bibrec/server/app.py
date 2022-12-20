@@ -117,11 +117,11 @@ class TopInCountry(Resource):
 
         app.logger.info(f'Finding top books for country {country}')
 
-        filtered_country_ratings = get_country_ratings(users, explicit_ratings, country)
+        filtered_country_ratings = get_country_ratings(users, ratings, country)
         app.logger.info(f'Found {len(filtered_country_ratings)} ratings of books in the specified country')
 
         # get most popular books of country
-        books_mean_count_country = add_mean_and_count(books, filtered_country_ratings)
+        books_mean_count_country = add_book_rating_mean_and_count(books, filtered_country_ratings)
         most_rated = get_most_rated_books(books_mean_count_country, 50)
         most_rated = most_rated.sort_values("rating_mean", ascending=False)
         trimmed_most_rated = most_rated[:args["recommendationCount"]]
@@ -164,7 +164,7 @@ class SimilarBooks(Resource):
         app.logger.info("Sent isbn: " + args["isbn10"])
         app.logger.info("Similar books for isbn: " + isbn13 + " are:")
         app.logger.info(similar_books)
-        similar_books = books.merge(similar_books, on='isbn13', how='inner')
+        similar_books = books.merge(similar_books, on=['isbn13', 'isbn', 'book_title'], how='inner')
         parsed = similar_books.to_json(orient='records')
         return json.loads(parsed)
 
@@ -195,7 +195,7 @@ class RecommendItems(Resource):
         if isbn:
             cbf_recommendations.append(cbf.recommend_tf_idf(isbn13, nItems))
         if userId:
-            rated_books = explicit_ratings[explicit_ratings["user_id"] == userId]["isbn13"].tolist()
+            rated_books = ratings[ratings["user_id"] == userId]["isbn13"].tolist()
             for book in rated_books:
                 cbf_recommendations.append(cbf.recommend_tf_idf(book, 3))
         if age and country and state and city:
