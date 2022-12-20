@@ -6,7 +6,7 @@ import pandas as pd
 def prepare_string(string):
     return str(string).strip().lower().replace('-', '_')
 
-def read_csv(path)
+def read_csv(path):
     df = pd.read_csv(path, sep=";", encoding="latin-1")
     df.columns = df.columns.map(prepare_string)
     return df
@@ -67,7 +67,7 @@ def get_books(path="./data/BX-Books.csv"):
     return books
 
 
-def sanitize_age(users)
+def sanitize_age(users):
     # replaced ages below 6 and above 110 with NaN
     users.loc[(users.age < 6) | (users.age > 110), 'age'] = np.nan
     # print("With NaN values", users.age.mean())
@@ -81,7 +81,7 @@ def sanitize_age(users)
     # print("used mean values", users.age.mean())
     return users
 
-def split_city_state_country(users)
+def split_city_state_country(users):
     # separate location into city, state and country
     location_seperated = users.location.str.split(',', 2, expand=True)
     location_seperated.columns = ['city', 'state', 'country']
