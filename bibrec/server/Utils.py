@@ -3,76 +3,13 @@ import logging
 import numpy as np
 import pandas as pd
 
-
-def get_books(path="./data/BX-Books.csv"):
-    logging.info("getting books from", path)
-    books = pd.read_csv(path, sep=";", encoding="latin-1")
-    books.columns = books.columns.map(prepare_string)
-    books.year_of_publication = pd.to_numeric(books.year_of_publication, errors='coerce')
-    # Replace years above 2005 with NaN (dataset was released in 2005)
-    books.loc[books.year_of_publication > 2005, 'year_of_publication'] = 0
-    mean_year_of_publication = round(books.year_of_publication.mean())
-    # replace invalid years with mean
-    books.year_of_publication.replace(0, mean_year_of_publication, inplace=True)
-    books.dropna(subset=["year_of_publication"], inplace=True)
-    books["year_of_publication"] = pd.to_numeric(books.year_of_publication, downcast="integer")
-    books['isbn'] = books['isbn'].apply(lambda x: x.upper())
-    books["isbn13"] = books.isbn.map(convert_isbn)
-    books = books[books.isbn13.notna()]
-    books = filter_duplicate_books(books)
-    return books
-
-
-def get_users(path="./data/BX-Users.csv"):
-    logging.info("getting users from", path)
-    users = pd.read_csv(path, sep=";", encoding="latin-1")
-    # cleaned column names
-    users.columns = users.columns.map(prepare_string)
-    # replaced ages below 6 and above 110 with NaN
-    users.loc[(users.age < 6) | (users.age > 110), 'age'] = np.nan
-    print("With NaN values", users.age.mean())
-    # replaced NaN ages with random ages from normal distribution
-    temp_age_series = pd.Series(
-        np.random.normal(loc=users.age.mean(), scale=users.age.std(), size=users.user_id[users.age.isna()].count()))
-    pos_age_series = np.abs(temp_age_series)
-    users = users.sort_values('age', na_position='first').reset_index(drop=True)
-    users.age.fillna(pos_age_series, inplace=True)
-    users = users.sort_values('user_id').reset_index(drop=True)
-    print("used mean values", users.age.mean())
-    # separate location into city, state and country
-    location_seperated = users.location.str.split(',', 2, expand=True)
-    location_seperated.columns = ['city', 'state', 'country']
-    users = users.join(location_seperated)
-    users.drop(columns=['location'], inplace=True)
-    # replaced empty strings with NaN
-    users.country.replace('', np.nan, inplace=True)
-    users.state.replace('', np.nan, inplace=True)
-    users.city.replace('', np.nan, inplace=True)
-
-    return users
-
-
-def get_ratings(books, path="./data/BX-Book-Ratings.csv", explicitOnly=True):
-    logging.info("getting ratings from", path)
-    ratings = pd.read_csv(path, sep=";", encoding="latin-1")
-    ratings.columns = ratings.columns.map(prepare_string)
-    ratings['isbn'] = ratings['isbn'].apply(lambda x: x.upper())
-    ratings["isbn13"] = ratings.isbn.map(convert_isbn)
-    ratings = ratings[ratings.isbn13.notna()]
-    ratings = ratings[ratings.isbn13.isin(books.isbn13)]
-    if explicitOnly:
-        ratings = get_explicit_ratings(ratings)
-    return ratings
-
-
-def get_explicit_ratings(ratings):
-    explicit_ratings = ratings[ratings.book_rating != 0]
-    return explicit_ratings
-
-
 def prepare_string(string):
     return str(string).strip().lower().replace('-', '_')
 
+def read_csv(path)
+    df = pd.read_csv(path, sep=";", encoding="latin-1")
+    df.columns = df.columns.map(prepare_string)
+    return df
 
 def convert_isbn(id):
     isbn = str(id)
@@ -96,6 +33,100 @@ def convert_isbn(id):
         return isbn
     else:
         return np.nan
+
+# sanitize isbn and add isbn13
+def sanitize_isbn(df):
+    df['isbn'] = df['isbn'].apply(lambda x: x.upper())
+    df["isbn13"] = df.isbn.map(convert_isbn)
+
+def sanitize_year_of_publication(books):
+    books.year_of_publication = pd.to_numeric(books.year_of_publication, errors='coerce')
+    # Replace years above 2005 with NaN (dataset was released in 2005)
+    books.loc[books.year_of_publication > 2005, 'year_of_publication'] = 0
+    mean_year_of_publication = round(books.year_of_publication.mean())
+    # replace invalid years with mean
+    books.year_of_publication.replace(0, mean_year_of_publication, inplace=True)
+    books.dropna(subset=["year_of_publication"], inplace=True)
+    books["year_of_publication"] = pd.to_numeric(books.year_of_publication, downcast="integer")
+    return books
+
+def get_books(path="./data/BX-Books.csv"):
+    logging.info("getting books from", path)
+    books = read_csv(path)
+
+    # sanitize isbn
+    books = sanitize_isbn(books)
+
+    # sanitize year_of_publication
+    books = sanitize_year_of_publication(books)
+
+    # filter invalid books
+    books = books[books.isbn13.notna()]
+    books = filter_duplicate_books(books)
+
+    return books
+
+
+def sanitize_age(users)
+    # replaced ages below 6 and above 110 with NaN
+    users.loc[(users.age < 6) | (users.age > 110), 'age'] = np.nan
+    # print("With NaN values", users.age.mean())
+    # replaced NaN ages with random ages from normal distribution
+    temp_age_series = pd.Series(
+        np.random.normal(loc=users.age.mean(), scale=users.age.std(), size=users.user_id[users.age.isna()].count()))
+    pos_age_series = np.abs(temp_age_series)
+    users = users.sort_values('age', na_position='first').reset_index(drop=True)
+    users.age.fillna(pos_age_series, inplace=True)
+    users = users.sort_values('user_id').reset_index(drop=True)
+    # print("used mean values", users.age.mean())
+    return users
+
+def split_city_state_country(users)
+    # separate location into city, state and country
+    location_seperated = users.location.str.split(',', 2, expand=True)
+    location_seperated.columns = ['city', 'state', 'country']
+    users = users.join(location_seperated)
+    users.drop(columns=['location'], inplace=True)
+
+    # replaced empty strings with NaN
+    users.country.replace('', np.nan, inplace=True)
+    users.state.replace('', np.nan, inplace=True)
+    users.city.replace('', np.nan, inplace=True)
+
+    return users
+
+def get_users(path="./data/BX-Users.csv"):
+    logging.info("getting users from", path)
+    users = read_csv(path)
+
+    # sanitize age
+    users = sanitize_age(users)
+    users = split_city_state_country(users)
+
+    # TODO: check if duplicate users present
+
+    return users
+
+
+def get_explicit_ratings(ratings):
+    explicit_ratings = ratings[ratings.book_rating != 0]
+    return explicit_ratings
+
+def get_ratings(books, path="./data/BX-Book-Ratings.csv", explicitOnly=True):
+    logging.info("getting ratings from", path)
+    ratings = read_csv(path)
+
+    # sanitize isbn
+    ratings = sanitize_isbn(ratings)
+
+    # filter invalid ratings
+    ratings = ratings[ratings.isbn13.notna()]
+    ratings = ratings[ratings.isbn13.isin(books.isbn13)]
+
+    if explicitOnly:
+        ratings = get_explicit_ratings(ratings)
+
+    return ratings
 
 
 def weighted_rating(v, m, R, C):
