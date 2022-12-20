@@ -17,9 +17,7 @@ books = get_books()
 ratings = get_ratings(books)
 users = get_users()
 bookData = pd.read_csv("./data/editions_dump.csv", sep=",", encoding="utf-8")
-explicit_ratings = ratings[ratings.book_rating != 0]
-filtered_ratings = filter_ratings(explicit_ratings, books)
-books_with_mean_count = add_book_rating_mean_and_count(books, filtered_ratings)
+books_with_mean_count = add_book_rating_mean_and_count(books, ratings)
 
 # models
 cbf = ContentBasedFiltering(bookData)
