@@ -19,6 +19,7 @@ def get_books(path="./data/BX-Books.csv"):
     books['isbn'] = books['isbn'].apply(lambda x: x.upper())
     books["isbn13"] = books.isbn.map(convert_isbn)
     books = books[books.isbn13.notna()]
+    books = filter_duplicate_books(books)
     return books
 
 
