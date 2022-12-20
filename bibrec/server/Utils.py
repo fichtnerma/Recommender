@@ -214,8 +214,6 @@ def add_user_rating_mean_and_count(df, ratings):
 
 
 top_countries = None
-
-
 def normalize_country(df, all_countries, top_n=20):
     global top_countries
     if top_countries == None:
@@ -327,7 +325,7 @@ def get_normalized_data(
 
     logging.info("normalizing users")
     users = add_user_rating_mean_and_count(users, ratings)
-    users = normalize_country(users)
+    users = normalize_country(users, users.country)
     users = normalize_state(users)
 
     logging.info("normalizing ratings")
