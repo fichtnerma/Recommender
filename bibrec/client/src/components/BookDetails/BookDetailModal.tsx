@@ -29,7 +29,7 @@ export default function BookDetailModal(props: BookDetailModelProps) {
 
 	useEffect(() => {
 		document.addEventListener("keydown", handleCloseOnEsc);
-		getSimilarBooks(selectedBook.isbn10);
+		getSimilarBooks(selectedBook.isbn);
 
 		return () => document.removeEventListener("keydown", handleCloseOnEsc);
 	}, []);
@@ -54,13 +54,13 @@ export default function BookDetailModal(props: BookDetailModelProps) {
 	}
 
 	function onRate(selectedRating: number) {
-		const sendRating = confirm(`Möchtest du das Buch „${selectedBook.title}“ wirklich mit ${selectedRating} Sternen bewerten?`);
+		const sendRating = confirm(`Möchtest du das Buch „${selectedBook.book_title}“ wirklich mit ${selectedRating} Sternen bewerten?`);
 		if (sendRating) {
 			try {
 				if (!user) return;
 				axios.post("http://localhost:4000/ratings", {
 					userId: user.id,
-					isbn10: selectedBook.isbn10,
+					isbn10: selectedBook.isbn,
 					rating: selectedRating
 				}).then(() => {
 					const { rating_count, rating_mean } = selectedBook;
@@ -76,7 +76,6 @@ export default function BookDetailModal(props: BookDetailModelProps) {
 				});
 
 
-
 			} catch (e) {
 				console.error(e);
 			}
@@ -88,14 +87,14 @@ export default function BookDetailModal(props: BookDetailModelProps) {
 			<div className="detailModal">
 				<div className={"closeIcon"} onClick={() => onClose(false)}/>
 				<BookDetails selectedBook={selectedBook} user={user} onRate={onRate}
-							 userRating={userRatings.find(rating => rating.isbn10 === selectedBook.isbn10)}/>
+							 userRating={userRatings.find(rating => rating.isbn === selectedBook.isbn)}/>
 				<div>
 					<h2>Diese Bücher könnten dir auch gefallen</h2>
 
 					{similarItems?.length
 						? <BookRow books={similarItems} onItemClick={(book) => {
 							setSelectedBook(book);
-							getSimilarBooks(book.isbn10);
+							getSimilarBooks(book.isbn);
 						}}/>
 						: <LoadingIndicator/>
 					}

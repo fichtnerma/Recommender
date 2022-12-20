@@ -9,14 +9,14 @@ interface BookItemProps {
 }
 
 export default function BookItem({ book, onItemClick }: BookItemProps) {
-	const { title, rating_mean, imageUrlLarge, author } = book;
+	const { book_title, rating_mean, image_url_l, book_author } = book;
 
 	return (
 		<div className="bookItem element" onClick={() => onItemClick(true)}>
-			<img src={imageUrlLarge} alt={`The cover for the book „${title}“`}/>
+			<img src={image_url_l} alt={`The cover for the book „${book_title}“`}/>
 			<RatingStars rating={+rating_mean}/>
-			<h3 className="bookTitle">{title}</h3>
-			<span>{author}</span>
+			<h3 className="bookTitle">{book_title}</h3>
+			<span>{book_author}</span>
 		</div>
 	);
 }

@@ -307,6 +307,18 @@ def get_lowest_rated_books(books, ratings, n=10):
     return lowest_rated_books
 
 
+def get_country_ratings(users, ratings, country):
+    parsed_user_country = country.__str__().lower().strip()
+    mask = users["country"] == parsed_user_country
+    country_users = users[mask]
+    logging.info(f'Found {len(country_users)} users in the specified country')
+    # filter for user ratings from the specified country
+    merged_country_ratings = pd.merge(ratings, country_users, on='user_id')
+    filtered_country_ratings = ratings[ratings['user_id'].isin(merged_country_ratings['user_id'])]
+
+    return filtered_country_ratings
+
+
 def remove_users_without_ratings(df, n=3):
     users_with_ratings = df[df["rating_count"] >= n]
     return users_with_ratings
