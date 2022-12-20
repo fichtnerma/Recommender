@@ -205,6 +205,7 @@ def add_book_rating_mean_and_count(df, ratings):
     books_with_mean = df.merge(book_avg_rating, on='isbn13', how='left')
     books_with_mean.rename(columns={'mean': 'rating_mean', 'count': 'rating_count'}, inplace=True)
     books_with_mean["rating_count"].fillna(0, inplace=True)
+    books_with_mean["rating_mean"].fillna(0, inplace=True)
     return books_with_mean
 
 

@@ -6,7 +6,7 @@ from flask import Flask
 from flask_restful import Api, Resource, reqparse
 
 from content_based_filtering import ContentBasedFiltering
-from data_exploration import *
+from Utils import *
 
 app = Flask(__name__)
 api = Api(app)
@@ -19,7 +19,7 @@ users = get_users()
 bookData = pd.read_csv("./data/editions_dump.csv", sep=",", encoding="utf-8")
 explicit_ratings = ratings[ratings.book_rating != 0]
 filtered_ratings = filter_ratings(explicit_ratings, books)
-books_with_mean_count = add_mean_and_count(books, filtered_ratings)
+books_with_mean_count = add_book_rating_mean_and_count(books, filtered_ratings)
 
 # models
 cbf = ContentBasedFiltering(bookData)
