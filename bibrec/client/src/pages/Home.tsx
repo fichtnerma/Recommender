@@ -5,6 +5,7 @@ import { User } from "../App";
 import { BooksBlock } from "../components/Books/BooksBlock";
 import axios from "axios";
 import { Book, Rating } from "../types/types";
+import { getTimezoneCountry } from "../../utils/utils";
 
 interface HomeProps {
 	user?: User;
@@ -21,8 +22,8 @@ export default function Home({ user }: HomeProps) {
 	);
 
 	useEffect(() => {
-		if (user) {
-			try {
+		try {
+			if (user) {
 				axios.post("http://localhost:4000/userRecommendations", {
 					userId: user?.id,
 					recommendationCount: 20
@@ -30,27 +31,30 @@ export default function Home({ user }: HomeProps) {
 					setUserRecommendations(res.data);
 				});
 
-				axios.post("http://localhost:4000/topInCountry", {
-					userId: user?.id,
-					recommendationCount: 20,
-					browserLang: navigator.language
-				}).then((res) => {
-					setTopInCountry(res.data);
-				});
-
-				axios.post("http://localhost:4000/browse")
-					.then((res) => {
-						setBrowseBooks(res.data);
-					});
-
-				axios.get("http://localhost:4000/ratings", { params: { userId: user.id }})
+				axios.get("http://localhost:4000/ratings", { params: { userId: user?.id } })
 					.then((res) => {
 						setUserRatings(res.data);
 					});
-
-			} catch (e) {
-				console.error(e);
 			}
+
+			const timezoneCountry = getTimezoneCountry();
+
+			axios.post("http://localhost:4000/topInCountry", {
+				userId: user?.id,
+				recommendationCount: 20,
+				timezoneCountry
+			}).then((res) => {
+				setTopInCountry(res.data);
+			});
+
+			axios.post("http://localhost:4000/browse")
+				.then((res) => {
+					setBrowseBooks(res.data);
+				});
+
+
+		} catch (e) {
+			console.error(e);
 		}
 	}, [user]);
 
@@ -75,7 +79,7 @@ export default function Home({ user }: HomeProps) {
 			{user ?
 				<BooksBlock title={"Deine Empfehlungen"} items={userRecommendations} onItemClick={onItemClick}/> : null}
 
-			<BooksBlock title={"Top 5 in deinem Land"} items={topInCountry} onItemClick={onItemClick}/>
+			<BooksBlock title={"Top Bücher in deinem Land"} items={topInCountry} onItemClick={onItemClick}/>
 
 			<BooksBlock title={"Mehr erkunden"} items={browseBooks} onItemClick={onItemClick}/>
 		</div>

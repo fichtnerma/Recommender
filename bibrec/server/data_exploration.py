@@ -1,6 +1,6 @@
 import pandas as pd
 
-from bibrec.server.Utils import get_books, get_users, get_ratings
+from Utils import *
 
 
 # filtern von ratings, die nicht in books sind
@@ -77,24 +77,24 @@ def calc_age(df):
 
 
 def get_most_rated_books(df, n=10):
-    most_rated_books = df.sort_values('count', ascending=False)
+    most_rated_books = df.sort_values('rating_count', ascending=False)
     most_rated_books = most_rated_books[:n]
     return most_rated_books
 
 
 def get_least_rated_books(df, n=10):
-    least_rated_books = df.sort_values('count', ascending=True)
-    most_rated_books = most_rated_books[:n]
+    least_rated_books = df.sort_values('rating_count', ascending=True)
+    least_rated_books = least_rated_books[:n]
     return least_rated_books
 
 
 def remove_users_without_ratings(df, n=3):
-    users_with_ratings = df[df["count"] >= n]
+    users_with_ratings = df[df["rating_count"] >= n]
     return users_with_ratings
 
 
 def remove_books_without_ratings(df, n=3):
-    books_with_ratings = df[df["count"] >= n]
+    books_with_ratings = df[df["rating_count"] >= n]
     return books_with_ratings
 
 

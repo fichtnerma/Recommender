@@ -26,21 +26,6 @@ export default function BookDetails({ selectedBook, user, onRate, userRating }: 
 				<h2>{title}</h2>
 				<h3>von {author}</h3>
 				<h3>{pubYear}</h3>
-				<p>Lorem ipsum, dolor sit amet consectetur adipisicing elit. Iusto dolor explicabo possimus ipsam
-					incidunt,
-					atque error veritatis deleniti perferendis modi ea adipisci aut sit sint libero vitae voluptatem
-					amet.
-					Quod. Lorem ipsum, dolor sit amet consectetur adipisicing elit. Iusto dolor explicabo possimus ipsam
-					incidunt, atque error veritatis deleniti perferendis modi ea adipisci aut sit sint libero vitae
-					voluptatem amet. Quod. Lorem ipsum, dolor sit amet consectetur adipisicing elit. Iusto dolor
-					explicabo possimus ipsam
-					incidunt,
-					atque error veritatis deleniti perferendis modi ea adipisci aut sit sint libero vitae voluptatem
-					amet.
-					Quod. Lorem ipsum, dolor sit amet consectetur adipisicing elit. Iusto dolor explicabo possimus ipsam
-					incidunt, atque error veritatis deleniti perferendis modi ea adipisci aut sit sint libero vitae
-					voluptatem amet.
-				</p>
 			</div>
 
 			{!!user ? <div className="ratingCTA">

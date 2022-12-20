@@ -44,6 +44,7 @@ def sanitize_isbn(df):
     df["isbn13"] = df.isbn.map(convert_isbn)
     return df
 
+
 def sanitize_year_of_publication(books):
     books.year_of_publication = pd.to_numeric(books.year_of_publication, errors='coerce')
     # Replace years above 2005 with NaN (dataset was released in 2005)
@@ -99,6 +100,10 @@ def split_city_state_country(users):
     users.country.replace('', np.nan, inplace=True)
     users.state.replace('', np.nan, inplace=True)
     users.city.replace('', np.nan, inplace=True)
+
+    # define column country as string + trim and lowercase the value
+    users["country"] = users["country"].astype("string")
+    users['country'] = users['country'].str.strip().str.lower()
 
     return users
 
@@ -214,6 +219,8 @@ def add_user_rating_mean_and_count(df, ratings):
 
 
 top_countries = None
+
+
 def normalize_country(df, all_countries, top_n=20):
     global top_countries
     if top_countries == None:
@@ -301,12 +308,12 @@ def get_lowest_rated_books(books, ratings, n=10):
 
 
 def remove_users_without_ratings(df, n=3):
-    users_with_ratings = df[df["count"] >= n]
+    users_with_ratings = df[df["rating_count"] >= n]
     return users_with_ratings
 
 
 def remove_books_without_ratings(df, n=3):
-    books_with_ratings = df[df["count"] >= n]
+    books_with_ratings = df[df["rating_count"] >= n]
     return books_with_ratings
 
 

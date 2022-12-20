@@ -5,8 +5,8 @@ from collections import defaultdict
 from flask import Flask
 from flask_restful import Api, Resource, reqparse
 
-from Utils import *
 from content_based_filtering import ContentBasedFiltering
+from data_exploration import *
 
 app = Flask(__name__)
 api = Api(app)
@@ -15,6 +15,7 @@ users_dict = defaultdict(list)
 users_ratings = pd.DataFrame(columns=["user_id", "isbn", "book_rating"])
 books = get_books()
 ratings = get_ratings(books)
+users = get_users()
 bookData = pd.read_csv("./data/editions_dump.csv", sep=",", encoding="utf-8")
 explicit_ratings = ratings[ratings.book_rating != 0]
 filtered_ratings = filter_ratings(explicit_ratings, books)
@@ -26,15 +27,16 @@ books_with_mean_count.rename(columns={'isbn': 'isbn10', 'book_title': 'title', '
 # models
 cbf = ContentBasedFiltering(bookData)
 
+user_id_key = "userId"
+username_key = "username"
+country_key = "country"
+state_key = "state"
+city_key = "city"
+age_key = "age"
+
 
 # Register User
 class RegisterUser(Resource):
-    user_id_key = "userId"
-    username_key = "username"
-    country_key = "country"
-    state_key = "state"
-    city_key = "city"
-    age_key = "age"
     register_user_args = reqparse.RequestParser()
     register_user_args.add_argument(username_key, type=str, help="Username is required", required=True)
     register_user_args.add_argument(country_key, type=str, help="Country of the user")
@@ -47,27 +49,27 @@ class RegisterUser(Resource):
 
         # check if user already exist
         for uid, user_info in users_dict.items():
-            if user_info[self.username_key] == args[self.username_key]:
+            if user_info[username_key] == args[username_key]:
                 # update user info if new info us submitted
-                user_info[self.country_key] = args[self.country_key]
-                user_info[self.state_key] = args[self.state_key]
-                user_info[self.city_key] = args[self.city_key]
-                user_info[self.age_key] = args[self.age_key]
+                user_info[country_key] = args[country_key]
+                user_info[state_key] = args[state_key]
+                user_info[city_key] = args[city_key]
+                user_info[age_key] = args[age_key]
 
                 # create return dict
                 temp_user = user_info.copy()
-                temp_user[self.user_id_key] = uid
+                temp_user[user_id_key] = uid
 
-                app.logger.info(f'User „{user_info[self.username_key]}“ logged in')
+                app.logger.info(f'User „{user_info[username_key]}“ logged in')
                 return temp_user
 
         # add a new user
         user_id = random.getrandbits(32)
         user_info = args.copy()
         users_dict[user_id] = user_info
-        args[self.user_id_key] = user_id
+        args[user_id_key] = user_id
 
-        app.logger.info(f'New user named „{user_info[self.username_key]}“ registered')
+        app.logger.info(f'New user named „{user_info[username_key]}“ registered')
         return args
 
 
@@ -119,12 +121,36 @@ class UserRecommendations(Resource):
 class TopInCountry(Resource):
     top_in_country_args = reqparse.RequestParser()
     top_in_country_args.add_argument("userId", type=int, help="The id of the current user")
-    top_in_country_args.add_argument("browserLang", type=str, help="The language of the user browser")
+    top_in_country_args.add_argument("timezoneCountry", type=str, help="The language of the user browser", required=True)
     top_in_country_args.add_argument("recommendationCount", type=int, help="The amount of recommendations", default=25)
 
     def post(self):
         args = self.top_in_country_args.parse_args()
-        json_str = books_with_mean_count.sample(n=args["recommendationCount"]).to_json(orient='records')
+        country = args["timezoneCountry"]
+
+        app.logger.info(f'Finding top books for country {country}')
+
+        parsed_user_country = country.__str__().lower().strip()
+        mask = users["country"] == parsed_user_country
+        country_users = users[mask]
+        app.logger.info(f'Found {len(country_users)} users in the specified country')
+
+        # filter for user ratings from the specified country
+        merged_country_ratings = pd.merge(explicit_ratings, country_users, on='user_id')
+        filtered_country_ratings = explicit_ratings[explicit_ratings['user_id'].isin(merged_country_ratings['user_id'])]
+        app.logger.info(f'Found {len(filtered_country_ratings)} ratings of books in the specified country')
+
+        # get most popular books of country
+        books_mean_count_country = add_mean_and_count(books, filtered_country_ratings)
+        most_rated = get_most_rated_books(books_mean_count_country, 50)
+        most_rated = most_rated.sort_values("rating_mean", ascending=False)
+        most_rated.rename(columns={'isbn': 'isbn10', 'book_title': 'title', 'book_author': 'author', 'year_of_publication': 'pubYear', 'image_url_s': 'imageUrlSmall',
+                                   'image_url_m': 'imageUrlMedium', 'image_url_l': 'imageUrlLarge'}, inplace=True)
+
+        trimmed_most_rated = most_rated[:args["recommendationCount"]]
+        app.logger.info(f'Returning {len(trimmed_most_rated)} most popular books of {country}')
+
+        json_str = trimmed_most_rated.to_json(orient='records')
         parsed = json.loads(json_str)
         return parsed
 
