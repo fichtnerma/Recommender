@@ -459,7 +459,7 @@ def recommend_items_rf(userId, age, locationCountry, locationState=None, locatio
     return rfc_pred.tolist()
 
 
-recommend_items_rf(1, 20, "usa")
+# recommend_items_rf(1, 20, "usa")
 
 
 def flatten(l):
