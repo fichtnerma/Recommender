@@ -26,17 +26,21 @@ docker-compose up -d
   - Parameter State ist optional, wird allerdings gleich behandelt
   - Parameter City wird nicht verwendet
 
-1. User Daten (Age + Country + State)
+### 1. User Daten (Age + Country + State)
+
 Prediction von Büchern mit Random Forest mit Features Age und Country und State
 
-2. User Daten (Age + Country + State) + UserId
+### 2. User Daten (Age + Country + State) + UserId
+
 Wird eine UserId mitgegeben, werden die bewerteten Büchern des Users herangezogen, um
 ähnliche Bücher über einen Content Based Filtering (TFID usw) Ansatz zu finden.
 Diese Bücher werden bei der Ergebnisliste der Random Forest Prediction eingestreut (Hybrider Ansatz).
 
-3. User Daten (Age + Country + State) + ItemId
+#### 3. User Daten (Age + Country + State) + ItemId
+
 Ähnliche Bücher zu den bewerteten Büchern des Users werden zurückgegeben.
 
-4. User Daten (Age + Country + State) + UserId + ItemId
+### 4. User Daten (Age + Country + State) + UserId + ItemId
+
 ??
 Evtl. auch Hybrider Ansatz
