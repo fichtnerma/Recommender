@@ -14,7 +14,7 @@ api = Api(app)
 users_dict = defaultdict(list)
 users_ratings = pd.DataFrame(columns=["user_id", "isbn", "book_rating"])
 books = get_books()
-books = filter_books(books)
+books = filter_duplicate_books(books)
 ratings = get_ratings()
 bookData = pd.read_csv("./data/editions_dump.csv", sep=",", encoding="utf-8")
 explicit_ratings = ratings[ratings.book_rating != 0]

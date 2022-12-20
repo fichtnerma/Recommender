@@ -16,6 +16,7 @@ def get_books(path="./data/BX-Books.csv"):
     books.year_of_publication.replace(0, mean_year_of_publication, inplace=True)
     books.dropna(subset=["year_of_publication"], inplace=True)
     books["year_of_publication"] = pd.to_numeric(books.year_of_publication, downcast="integer")
+    books['isbn'] = books['isbn'].apply(lambda x: x.upper())
     books["isbn13"] = books.isbn.map(convert_isbn)
     books = books[books.isbn13.notna()]
     return books
@@ -54,9 +55,9 @@ def get_ratings(path="./data/BX-Book-Ratings.csv"):
     logging.info("getting ratings from", path)
     ratings = pd.read_csv(path, sep=";", encoding="latin-1")
     ratings.columns = ratings.columns.map(prepare_string)
+    ratings['isbn'] = ratings['isbn'].apply(lambda x: x.upper())
     ratings["isbn13"] = ratings.isbn.map(convert_isbn)
     ratings = ratings[ratings.isbn13.notna()]
-
     return ratings
 
 
@@ -140,8 +141,7 @@ def assign_popular_based_score(rating_df, item_df, user_col, item_col, rating_co
 
 
 # filter duplicate books
-def filter_books(books):
-    books['isbn'] = books['isbn'].apply(lambda x: x.upper())
+def filter_duplicate_books(books):
     return books.drop_duplicates(subset=["isbn"], ignore_index=True)
 
 
