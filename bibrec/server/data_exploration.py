@@ -101,7 +101,7 @@ def remove_books_without_ratings(df, n=3):
 users = get_users()
 
 books = get_books()
-ratings = get_ratings()
+ratings = get_ratings(books)
 
 implicit_ratings = ratings[ratings.book_rating == 0]
 explicit_ratings = ratings[ratings.book_rating != 0]

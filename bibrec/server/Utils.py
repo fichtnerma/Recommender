@@ -3,13 +3,16 @@ import logging
 import numpy as np
 import pandas as pd
 
+
 def prepare_string(string):
     return str(string).strip().lower().replace('-', '_')
+
 
 def read_csv(path):
     df = pd.read_csv(path, sep=";", encoding="latin-1")
     df.columns = df.columns.map(prepare_string)
     return df
+
 
 def convert_isbn(id):
     isbn = str(id)
@@ -34,10 +37,12 @@ def convert_isbn(id):
     else:
         return np.nan
 
+
 # sanitize isbn and add isbn13
 def sanitize_isbn(df):
     df['isbn'] = df['isbn'].apply(lambda x: x.upper())
     df["isbn13"] = df.isbn.map(convert_isbn)
+    return df
 
 def sanitize_year_of_publication(books):
     books.year_of_publication = pd.to_numeric(books.year_of_publication, errors='coerce')
@@ -49,6 +54,7 @@ def sanitize_year_of_publication(books):
     books.dropna(subset=["year_of_publication"], inplace=True)
     books["year_of_publication"] = pd.to_numeric(books.year_of_publication, downcast="integer")
     return books
+
 
 def get_books(path="./data/BX-Books.csv"):
     logging.info("getting books from", path)
@@ -81,6 +87,7 @@ def sanitize_age(users):
     # print("used mean values", users.age.mean())
     return users
 
+
 def split_city_state_country(users):
     # separate location into city, state and country
     location_seperated = users.location.str.split(',', 2, expand=True)
@@ -94,6 +101,7 @@ def split_city_state_country(users):
     users.city.replace('', np.nan, inplace=True)
 
     return users
+
 
 def get_users(path="./data/BX-Users.csv"):
     logging.info("getting users from", path)
@@ -112,6 +120,7 @@ def get_explicit_ratings(ratings):
     explicit_ratings = ratings[ratings.book_rating != 0]
     return explicit_ratings
 
+
 def get_ratings(books, path="./data/BX-Book-Ratings.csv", explicitOnly=True):
     logging.info("getting ratings from", path)
     ratings = read_csv(path)
@@ -123,7 +132,7 @@ def get_ratings(books, path="./data/BX-Book-Ratings.csv", explicitOnly=True):
     ratings = ratings[ratings.isbn13.notna()]
     ratings = ratings[ratings.isbn13.isin(books.isbn13)]
 
-    if explicitOnly:
+    if explicitOnly == True:
         ratings = get_explicit_ratings(ratings)
 
     return ratings
@@ -204,45 +213,66 @@ def add_user_rating_mean_and_count(df, ratings):
     return users_with_mean
 
 
-def normalize_country(df, top_n=20):
-    top_countries = df.country.value_counts()[:top_n].index.tolist()
-    top_countries.append("other")
+top_countries = None
+
+
+def normalize_country(df, all_countries, top_n=20):
+    global top_countries
+    if top_countries == None:
+        logging.info("Creating top_countries")
+        top_countries = all_countries.value_counts()[:top_n].index.tolist()
+        top_countries = list(map(lambda x: str(x).strip().lower().replace(' ', '_'), top_countries))
+        top_countries.append("other")
     encoded_users = df.copy()
     countries = encoded_users["country"]
-    countries = pd.Categorical(countries, categories=top_countries).fillna("other")
     countries = list(map(lambda x: str(x).strip().lower().replace(' ', '_'), countries))
+    countries = pd.Categorical(countries, categories=top_countries).fillna("other")
     encoded_users["country"] = countries
     return encoded_users
 
 
+top_states = None
+
+
 def normalize_state(df, top_n=20):
-    top_states = df.state.value_counts()[:top_n].index.tolist()
-    top_states.append("other")
+    global top_states
+    if top_states == None:
+        logging.info("Creating top_states")
+        top_states = df.state.value_counts()[:top_n].index.tolist()
+        top_states = list(map(lambda x: str(x).strip().lower().replace(' ', '_'), top_states))
+        top_states.append("other")
     encoded_users = df.copy()
     states = encoded_users["state"]
-    states = pd.Categorical(states, categories=top_states).fillna("other")
     states = list(map(lambda x: str(x).strip().lower().replace(' ', '_'), states))
+    states = pd.Categorical(states, categories=top_states).fillna("other")
     encoded_users["state"] = states
-
     return encoded_users
 
 
+top_publishers = None
+
+
 def normalize_publisher(df, top_n=20):
-    top_publishers = df.publisher.value_counts()[:top_n].index.tolist()
-    top_publishers.append("other")
+    global top_publishers
+    if top_publishers == None:
+        top_publishers = df.publisher.value_counts()[:top_n].index.tolist()
+        top_publishers = list(map(lambda x: str(x).strip().lower().replace(' ', '_'), top_publishers))
+        top_publishers.append("other")
     encoded_books = df.copy()
     publisher = encoded_books["publisher"]
-    publisher = pd.Categorical(publisher, categories=top_publishers).fillna("other")
     publisher = list(map(lambda x: str(x).strip().lower().replace(' ', '_'), publisher))
+    publisher = pd.Categorical(publisher, categories=top_publishers).fillna("other")
     encoded_books["publisher"] = publisher
     return encoded_books
 
 
 # normalizing ratings
 def normalize_ratings_for_user(df, users_with_mean):
-    normalized_ratings = df.copy()
-    normalized_ratings = normalized_ratings.merge(users_with_mean, on='user_id', how='left')
-    normalized_ratings['normalized_rating'] = normalized_ratings.book_rating - normalized_ratings["user_mean"]
+    tmp_ratings = df.copy()
+    tmp_ratings = tmp_ratings.merge(users_with_mean, on='user_id', how='left')
+    tmp_ratings['normalized_rating'] = tmp_ratings.book_rating - tmp_ratings["user_mean"]
+    # normalized_ratings = df.merge(tmp_ratings[["isbn13", "normalized_rating"]], on='isbn13', how='left')
+    normalized_ratings = tmp_ratings[["isbn13", "normalized_rating"]].merge(df, on='isbn13', how='left')
     return normalized_ratings
 
 
@@ -285,10 +315,10 @@ def remove_books_without_ratings(df, n=3):
 def get_normalized_data(
         books_path='./data/BX-Books.csv',
         users_path='./data/BX-Users.csv',
-        ratings_path='./data/BX-Book-Ratings.csv'):
+        ratings_path='./data/BX-Book-Ratings.csv', explicitOnly=True):
     books = get_books(books_path)
     users = get_users(users_path)
-    ratings = get_ratings(ratings_path, books)
+    ratings = get_ratings(books, ratings_path, explicitOnly)
 
     logging.info("normalizing books")
     books = add_book_rating_mean_and_count(books, ratings)
@@ -324,81 +354,112 @@ def hot_encode_state(users):
     return encoded_users
 
 
-def hot_encode_data(books, users):
-    logging.info("hot encoding data")
+def hot_encode_books(books):
+    logging.info("hot encoding books")
     books = hot_encode_publisher(books)
+    return books
+
+
+def hot_encode_users(users):
+    logging.info("hot encoding books")
     users = hot_encode_country(users)
     users = hot_encode_state(users)
-    return books, users
+    return users
 
 
-def recommend_items_rf(userId, age, locationCountry, locationState=None, locationCity=None, itemId=None, numberOfItems=10):
+def recommend_items_rf(userId, age, locationCountry, locationState=None, locationCity=None, itemId=None,
+                       numberOfItems=10, retrain=False):
     from sklearn.model_selection import train_test_split
     from sklearn.ensemble import RandomForestClassifier
 
     # books, users, ratings = get_normalized_data()
+
+    # for local testing
     books, users, ratings = get_normalized_data(books_path='../../data/BX-Books.csv',
                                                 users_path='../../data/BX-Users.csv',
                                                 ratings_path='../../data/BX-Book-Ratings.csv')
 
+    # drop unused isbn column
+    books = books.drop(["isbn"], axis=1)
+    ratings = ratings.drop(["isbn"], axis=1)
+
+    # limit ratings
     limit = 1000
     logging.info("limiting data to {} ratings".format(limit))
-    df_ratings = ratings.groupby('isbn13').user_id.count().sort_values(ascending=False)
-    df_ratings = df_ratings[:limit]
-    df_ratings = df_ratings.reset_index()
+    top_ratings = ratings.groupby('isbn13').user_id.count().sort_values(ascending=False)
+    top_ratings = top_ratings[:limit]
+    top_ratings = top_ratings.reset_index()
+    # user_id => nr of ratings
+    top_ratings = top_ratings.drop('user_id', axis=1)
 
-    books = books[books.isbn13.isin(df_ratings.isbn13)]
-    users = users[users.user_id.isin(df_ratings.user_id)]
-    books, users = hot_encode_data(books, users)
+    # filter ratings
+    explicit_ratings = ratings[ratings.book_rating != 0]
+    top_ratings = top_ratings.merge(explicit_ratings, on='isbn13', how='inner')
+
+    # limit user and books
+    filtered_books = books[books.isbn13.isin(top_ratings.isbn13)]
+    filtered_users = users[users.user_id.isin(top_ratings.user_id)]
+
+    # hot encode data
+    encoded_books = hot_encode_books(filtered_books)
+    encoded_users = hot_encode_users(filtered_users)
 
     # RF Features: Country, State, Age, Year-of-Publication, Publisher
-    tmp_users = users.filter(regex="user_id|age|country_|state_", axis=1)
-    tmp_books = books.filter(regex="isbn13|normalized_year_of_publication|publisher_", axis=1)
+    df_books = encoded_books.filter(regex="isbn13|normalized_year_of_publication|publisher_", axis=1)
+    df_users = encoded_users.filter(regex="user_id|age|country_|state_", axis=1)
     # df = df_ratings.filter(regex="isbn13|user_id|normalized_rating", axis=1)
-    df = df_ratings.filter(regex="isbn13|user_id|book_rating", axis=1)
-    df = df.merge(tmp_users)
-    df = df.merge(tmp_books)
+    df_ratings = top_ratings.filter(regex="isbn13|user_id|book_rating", axis=1)
+
+    # combine dataset
+    df = df_ratings
+    df = df.merge(df_books)
+    df = df.merge(df_users)
 
     # Features
-    X = df.drop(['user_id', 'isbn13', 'book_rating'], axis=1)
+    X = df.drop(['user_id', 'book_rating'], axis=1)
     # Prediction
     Y = df['book_rating']
-
-    logging.info("splitting training/testing data")
-    X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.30)
 
     from os.path import exists
     import pickle
 
     # Load the model from the file
-    model_file = "rf-recommendItems.pkl"
-    if exists(model_file):
+    model_file = "rf-model.pkl"
+    if not retrain and exists(model_file):
         logging.info("loading model", model_file)
         with open(model_file, "rb") as file:
             rfc = pickle.load(file)
     else:
         logging.info("Creating new model")
         rfc = RandomForestClassifier(n_estimators=100, min_weight_fraction_leaf=0, n_jobs=3, random_state=1)
+        logging.info("Train entire dataset")
 
-    rfc.fit(X_train, y_train)
+        # TODO: train on entire data set
+        # rfc.fit(X, Y)
 
-    # Save the model to a file
-    with open(model_file, "wb") as file:
-        logging.info("Saving model", model_file)
-        pickle.dump(rfc, file)
+        # train on training data set
+        X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.30)
+        df_input = X_test
 
+        # train model
+        rfc.fit(df_input, Y)
+
+        # Save the model to a file
+        with open(model_file, "wb") as file:
+            logging.info("Saving model", model_file)
+            pickle.dump(rfc, file)
+
+    # TODO: train on entire data set
+    df_input = X
+
+    # TODO: predict all books and return top rated
     logging.info("Running prediction")
-    rfc_pred = rfc.predict(X_test)
-
-    print(rfc_pred)
-
-    # ratings = pd.DataFrame(rfc_pred, columns=["book_rating"])
-    # predictions = pd.concat([y_test[:3], X_test[:3]], axis=1)
-    # predictions = pd.concat([ratings, X_test], axis=1)
-    # predictions = predictions.filter(regex="isbn13|book_rating", axis=1)
-    # predictions
-
+    rfc_pred = rfc.predict(df_input)
+    logging.info("Predictions:", rfc_pred)
     return rfc_pred.tolist()
+
+
+recommend_items_rf(1, 20, "usa")
 
 
 def flatten(l):
