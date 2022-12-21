@@ -32,6 +32,7 @@ cbf = ContentBasedFiltering(books_with_mean_count, bookData)
 
 logging.info("Applicaton ready!")
 
+
 # Register User
 class RegisterUser(Resource):
     register_user_args = reqparse.RequestParser()
@@ -221,6 +222,7 @@ class RecommendItems(Resource):
         isbn13 = str(convert_isbn(args["itemId"]))
         cbf_recommendations = []
         rf_recommendations = []
+
         if isbn:
             cbf_recommendations.append(cbf.recommend_tf_idf(isbn13, nItems))
         if userId:
@@ -236,6 +238,8 @@ class RecommendItems(Resource):
         rec_cbf = list(dict.fromkeys(flatten(rec_cbf)))
         app.logger.info("Recommendations for user: ")
         app.logger.info(rec_cbf)
+
+        # TODO: parse to string array
         json_str = books_with_mean_count.sample(n=args["numberOfItems"]).to_json(orient='records')
         parsed = json.loads(json_str)
         return parsed
