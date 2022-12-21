@@ -8,16 +8,16 @@ from os.path import exists
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 
-# DATA_DIR = "./data"
+DATA_DIR = "./data"
 
 # for local testing
-DATA_DIR = "../../data"
+# DATA_DIR = "../../data"
 
 BOOKS_CSV = "%s/BX-Books.csv" % DATA_DIR
 USERS_CSV = "%s/BX-Users.csv" % DATA_DIR
 RATINGS_CSV = "%s/BX-Book-Ratings.csv" % DATA_DIR
 
-NORMALIZED_BOOKS_CSV = DATA_DIR + '/normalized_books.csv'
+NORMALIZED_BOOKS_CSV = '%s/normalized_books.csv' % DATA_DIR
 NORMALIZED_USERS_CSV = '%s/normalized_users.csv' % DATA_DIR
 NORMALIZED_RATINGS_CSV = '%s/normalized_ratings.csv' % DATA_DIR
 
@@ -79,9 +79,9 @@ def sanitize_year_of_publication(books):
     return books
 
 
-def get_books(path=BOOKS_CSV):
-    logging.info("getting books from", path)
-    books = read_csv(path)
+def get_books(books_path=BOOKS_CSV):
+    logging.info("getting books from", books_path)
+    books = read_csv(books_path)
 
     # sanitize isbn
     books = sanitize_isbn(books)
@@ -133,9 +133,9 @@ def split_city_state_country(users):
     return users
 
 
-def get_users(path=USERS_CSV):
-    logging.info("getting users from", path)
-    users = read_csv(path)
+def get_users(users_path=USERS_CSV):
+    logging.info("getting users from", users_path)
+    users = read_csv(users_path)
 
     # sanitize age
     users = sanitize_age(users)
@@ -155,9 +155,9 @@ def get_explicit_ratings(ratings):
     return explicit_ratings
 
 
-def get_ratings(books, path=RATINGS_CSV, explicitOnly=True):
-    logging.info("getting ratings from", path)
-    ratings = read_csv(path)
+def get_ratings(books, ratings_path=RATINGS_CSV, explicit_only=True):
+    logging.info("getting ratings from", ratings_path)
+    ratings = read_csv(ratings_path)
 
     # sanitize isbn
     ratings = sanitize_isbn(ratings)
@@ -166,7 +166,7 @@ def get_ratings(books, path=RATINGS_CSV, explicitOnly=True):
     ratings = ratings[ratings.isbn13.notna()]
     ratings = ratings[ratings.isbn13.isin(books.isbn13)]
 
-    if explicitOnly:
+    if explicit_only:
         ratings = get_explicit_ratings(ratings)
 
     return ratings
@@ -299,10 +299,7 @@ def get_top_col(df, top_n=20):
 
 # top_countries = None
 def normalize_country(df):
-    top_countries = ["argentina", "australia", "austria", "brazil", "canada", "china", "france", "gernany", "india",
-                     "italy", "malaysia", "netherlands", "new_zealand", "other", "portugal", "singapore", "spain",
-                     "sweden", "switzerland", "united_kingdom", "usa"]
-
+    global top_countries
     encoded_users = df.copy()
     countries = encoded_users["country"]
     countries = list(map(lambda x: str(x).strip().lower().replace(' ', '_'), countries))
@@ -323,7 +320,6 @@ def normalize_state(df):
 
 def normalize_publisher(df):
     global top_publisher
-
     encoded_books = df.copy()
     publisher = encoded_books["publisher"]
     publisher = list(map(lambda x: str(x).strip().lower().replace(' ', '_'), publisher))
@@ -417,8 +413,12 @@ def normalize_data(books, users, ratings):
     users = normalize_state(users)
 
     logging.info("normalizing ratings")
+    ratings = get_explicit_ratings(ratings)
     ratings = normalize_ratings_for_user(ratings, users)
+    return books, users, ratings
 
+
+def export_normalized_data(books, users, ratings):
     logging.info("saving normalized data")
     books.to_csv(NORMALIZED_BOOKS_CSV)
     users.to_csv(NORMALIZED_USERS_CSV)
@@ -553,7 +553,6 @@ def recommend_items_rf(norm_books, norm_users, norm_ratings,
 
 def flatten(l):
     return [item for sublist in l for item in sublist]
-
 
 # run random forest prediction
 # print("Predictions:")
