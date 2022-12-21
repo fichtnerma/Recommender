@@ -20,7 +20,6 @@ users = get_users()
 ratings = get_ratings(books)
 
 # get normalized data
-# norm_books, norm_users, norm_ratings = normalized_data(books, users, ratings)
 norm_books, norm_users, norm_ratings = get_normalized_data()
 
 # todo
