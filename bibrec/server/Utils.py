@@ -466,14 +466,12 @@ def recommend_items_rf(age, locationCountry, userId=None,
     df_user = df_user.filter(regex="age|country_|state_", axis=1)
 
     # hot encode data
-    encoded_books_path = data_path + "/encoded_books.pkl"
-    if exists(encoded_books_path):
-        print("loading encoded books")
-        encoded_books = read_object(encoded_books_path)
-    else:
-        print("encoding books ...")
-        encoded_books = hot_encode_books(books)
-        dump_object(encoded_books_path, encoded_books)
+    encoded_books_path = data_path + "/encoded_books.csv"
+
+    if not exists(encoded_books_path):
+        raise Exception("Encoded Books does not exist")
+
+    encoded_books = read_object(encoded_books_path)
 
     df_books = encoded_books.filter(regex="isbn13|normalized_year_of_publication|publisher_", axis=1)
 
