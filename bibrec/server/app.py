@@ -13,9 +13,17 @@ api = Api(app)
 
 users_dict = defaultdict(list)
 users_ratings = pd.DataFrame(columns=["user_id", "isbn", "book_rating"])
+
+# get data
 books = get_books()
-ratings = get_ratings(books)
 users = get_users()
+ratings = get_ratings(books)
+
+# get normalized data
+# norm_books, norm_users, norm_ratings = normalized_data(books, users, ratings)
+norm_books, norm_users, norm_ratings = get_normalized_data()
+
+# todo
 bookData = pd.read_csv("./data/editions_dump.csv", sep=",", encoding="utf-8")
 books_with_mean_count = add_book_rating_mean_and_count(books, ratings)
 
@@ -102,8 +110,8 @@ class UserRecommendations(Resource):
         args = self.user_rec_args.parse_args()
         app.logger.info(f'UserRecommendations run prediction for ', args.userId)
         user = users[users["user_id"] == args.userId]
-        recommendations = recommend_items_rf(user.user_id, user.age, user.country, numberOfItems=args.recommendationCount)
-        app.logger.info('Predictions', recommendations[:3])
+        recommendations = recommend_items_rf(norm_books, norm_users, norm_ratings, user.userId, user.age, user.country, numberOfItems=args.recommendationCount)
+        app.logger.info('Predictions', recommendations)
         json_str = recommendations.to_json(orient='records')
         parsed = json.loads(json_str)
         return parsed
@@ -251,9 +259,9 @@ class RecommendItemsRF(Resource):
     def post(self):
         args = self.args.parse_args()
         app.logger.info(f'RecommendItemsRF run prediction')
-        recommendations = recommend_items_rf(args.userId, args.age, args.locationCountry, args.locationState, args.locationCity, args.itemId, args.numberOfItems)
-        app.logger.info('Predictions', recommendations[:3])
-        json_str = recommendations[:3].to_json(orient='records')
+        recommendations = recommend_items_rf(norm_books,norm_users, norm_ratings, args.userId, args.age, args.locationCountry, args.locationState, args.locationCity, args.itemId, args.numberOfItems)
+        app.logger.info('Predictions', recommendations[:args.numberOfItems])
+        json_str = recommendations[:args.numberOfItems].to_json(orient='records')
         parsed = json.loads(json_str)
         return parsed
 
