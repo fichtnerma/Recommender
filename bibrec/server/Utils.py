@@ -242,14 +242,19 @@ def add_user_rating_mean_and_count(df, ratings):
 
 
 top_countries = None
-def normalize_country(df, all_countries, top_n=20):
+
+
+all_countries=["argentina", "australia", "austria", "brazil", "canada", "china", "france", "gernany", "india", "italy", "malaysia", "netherlands", "new_zealand", "other", "portugal", "singapore", "spain", "sweden", "switzerland", "united_kingdom", "usa" ]
+def normalize_country(df, top_n=20):
     global top_countries
     if top_countries is None:
         logging.info("Creating top_countries")
-        top_countries = all_countries.value_counts()[:top_n].index.tolist()
-        top_countries = list(map(lambda x: str(x).strip().lower().replace(' ', '_'), top_countries))
-        if 'other' not in top_countries:
-            top_countries.append("other")
+        # recreate all countries
+        # top_countries = all_countries.value_counts()[:top_n].index.tolist()
+        # top_countries = list(map(lambda x: str(x).strip().lower().replace(' ', '_'), top_countries))
+        # if 'other' not in top_countries:
+        #     top_countries.append("other")
+        top_countries = all_countries
 
     encoded_users = df.copy()
     countries = encoded_users["country"]
@@ -361,7 +366,7 @@ def get_normalized_data(books_path=NORMALIZED_BOOKS_CSV,
     return books, users, ratings
 
 
-def normalized_data(books, users, ratings):
+def normalize_data(books, users, ratings):
     logging.info("normalizing books")
     books = add_book_rating_mean_and_count(books, ratings)
     books = normalize_year_of_publication(books)
@@ -369,7 +374,7 @@ def normalized_data(books, users, ratings):
 
     logging.info("normalizing users")
     users = add_user_rating_mean_and_count(users, ratings)
-    users = normalize_country(users, users.country)
+    users = normalize_country(users)
     users = normalize_state(users)
 
     logging.info("normalizing ratings")
@@ -472,7 +477,7 @@ def recommend_items_rf(norm_books, norm_users, norm_ratings,
 
     # create users
     df_user = user
-    df_user = normalize_country(df_user, norm_users.country)
+    df_user = normalize_country(df_user)
     df_user = normalize_state(df_user)
     df_user = hot_encode_users(df_user)
     df_user = df_user.filter(regex="age|country_|state_", axis=1)
@@ -523,4 +528,4 @@ print(recommend_items_rf(norm_books, norm_users, norm_ratings, age=20, locationC
 # books = get_books()
 # users = get_users()
 # ratings = get_ratings(books)
-# norm_books, norm_users, norm_ratings = normalized_data(books, users, ratings)
+# norm_books, norm_users, norm_ratings = normalize_data(books, users, ratings)
