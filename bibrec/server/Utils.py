@@ -93,6 +93,9 @@ def get_books(path=BOOKS_CSV):
     books = books[books.isbn13.notna()]
     books = filter_duplicate_books(books)
 
+    # init top publisher
+    init_top_publisher(books)
+
     return books
 
 
@@ -137,6 +140,10 @@ def get_users(path=USERS_CSV):
     # sanitize age
     users = sanitize_age(users)
     users = split_city_state_country(users)
+
+    # init top countries and states
+    init_top_countries(users)
+    init_top_states(users)
 
     # TODO: check if duplicate users present
 
@@ -242,19 +249,59 @@ def add_user_rating_mean_and_count(df, ratings):
 
 
 top_countries = None
+top_states = None
+top_publisher = None
 
 
-all_countries=["argentina", "australia", "austria", "brazil", "canada", "china", "france", "gernany", "india", "italy", "malaysia", "netherlands", "new_zealand", "other", "portugal", "singapore", "spain", "sweden", "switzerland", "united_kingdom", "usa" ]
-def normalize_country(df, top_n=20):
+def get_top_countries():
+    return top_countries
+
+
+def get_top_states():
+    return top_states
+
+
+def get_top_publisher():
+    return top_publisher
+
+
+def init_top_states(users, top_n=20):
+    global top_states
+    if top_states is None:
+        logging.info("Creating top states")
+        top_states = get_top_col(users.state, top_n)
+    return top_states
+
+
+def init_top_countries(users, top_n=20):
     global top_countries
     if top_countries is None:
-        logging.info("Creating top_countries")
-        # recreate all countries
-        # top_countries = all_countries.value_counts()[:top_n].index.tolist()
-        # top_countries = list(map(lambda x: str(x).strip().lower().replace(' ', '_'), top_countries))
-        # if 'other' not in top_countries:
-        #     top_countries.append("other")
-        top_countries = all_countries
+        logging.info("Creating top countries")
+        top_countries = get_top_col(users.country, top_n)
+    return top_countries
+
+
+def init_top_publisher(books, top_n=20):
+    global top_publisher
+    if top_countries is None:
+        logging.info("Creating top publishers")
+        top_publisher = get_top_col(books.publisher, top_n)
+    return top_publisher
+
+
+def get_top_col(df, top_n=20):
+    top_col = df.value_counts()[:top_n].index.tolist()
+    top_col = list(map(lambda x: str(x).strip().lower().replace(' ', '_'), top_col))
+    if 'other' not in top_col:
+        top_col.append("other")
+    return top_col
+
+
+# top_countries = None
+def normalize_country(df):
+    top_countries = ["argentina", "australia", "austria", "brazil", "canada", "china", "france", "gernany", "india",
+                     "italy", "malaysia", "netherlands", "new_zealand", "other", "portugal", "singapore", "spain",
+                     "sweden", "switzerland", "united_kingdom", "usa"]
 
     encoded_users = df.copy()
     countries = encoded_users["country"]
@@ -264,16 +311,8 @@ def normalize_country(df, top_n=20):
     return encoded_users
 
 
-top_states = None
-
-
-def normalize_state(df, top_n=20):
+def normalize_state(df):
     global top_states
-    if top_states == None:
-        logging.info("Creating top_states")
-        top_states = df.state.value_counts()[:top_n].index.tolist()
-        top_states = list(map(lambda x: str(x).strip().lower().replace(' ', '_'), top_states))
-        top_states.append("other")
     encoded_users = df.copy()
     states = encoded_users["state"]
     states = list(map(lambda x: str(x).strip().lower().replace(' ', '_'), states))
@@ -282,19 +321,13 @@ def normalize_state(df, top_n=20):
     return encoded_users
 
 
-top_publishers = None
+def normalize_publisher(df):
+    global top_publisher
 
-
-def normalize_publisher(df, top_n=20):
-    global top_publishers
-    if top_publishers == None:
-        top_publishers = df.publisher.value_counts()[:top_n].index.tolist()
-        top_publishers = list(map(lambda x: str(x).strip().lower().replace(' ', '_'), top_publishers))
-        top_publishers.append("other")
     encoded_books = df.copy()
     publisher = encoded_books["publisher"]
     publisher = list(map(lambda x: str(x).strip().lower().replace(' ', '_'), publisher))
-    publisher = pd.Categorical(publisher, categories=top_publishers).fillna("other")
+    publisher = pd.Categorical(publisher, categories=top_publisher).fillna("other")
     encoded_books["publisher"] = publisher
     return encoded_books
 
@@ -363,6 +396,12 @@ def get_normalized_data(books_path=NORMALIZED_BOOKS_CSV,
     books = pd.read_csv(books_path, sep=",", encoding="utf-8")
     users = pd.read_csv(users_path, sep=",", encoding="utf-8")
     ratings = pd.read_csv(ratings_path, sep=",", encoding="utf-8")
+
+    # init global vars and ensure all normalized columns are loaded
+    init_top_publisher(books, top_n=1000)
+    init_top_countries(users, top_n=1000)
+    init_top_states(users, top_n=1000)
+
     return books, users, ratings
 
 
@@ -489,9 +528,6 @@ def recommend_items_rf(norm_books, norm_users, norm_ratings,
 
     df_books = encoded_books.filter(regex="isbn13|normalized_year_of_publication|publisher_", axis=1)
 
-    # TODO remve this after test
-    df_books = df_books[:10]
-
     # combine dataset
     df_input = df_books.assign(**df_user.iloc[0])
 
@@ -520,12 +556,19 @@ def flatten(l):
 
 
 # run random forest prediction
-print("Predictions:")
-norm_books, norm_users, norm_ratings = get_normalized_data()
-print(recommend_items_rf(norm_books, norm_users, norm_ratings, age=20, locationCountry="USA"))
+# print("Predictions:")
+# norm_books, norm_users, norm_ratings = get_normalized_data()
+# print(recommend_items_rf(norm_books, norm_users, norm_ratings, age=20, locationCountry="USA"))
 
-# run to normalize books
+# run to normalize books and export to file
 # books = get_books()
 # users = get_users()
 # ratings = get_ratings(books)
 # norm_books, norm_users, norm_ratings = normalize_data(books, users, ratings)
+
+# get top columns
+# books = get_books()
+# users = get_users()
+# print("top countries", get_top_countries())
+# print("top states", get_top_states())
+# print("top publisher", get_top_publisher())
