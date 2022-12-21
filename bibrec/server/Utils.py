@@ -8,6 +8,24 @@ from os.path import exists
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 
+# DATA_DIR = "./data"
+
+# for local testing
+DATA_DIR = "../../data"
+
+BOOKS_CSV = "%s/BX-Books.csv" % DATA_DIR
+USERS_CSV = "%s/BX-Users.csv" % DATA_DIR
+RATINGS_CSV = "%s/BX-Book-Ratings.csv" % DATA_DIR
+
+NORMALIZED_BOOKS_CSV = DATA_DIR + '/normalized_books.csv'
+NORMALIZED_USERS_CSV = '%s/normalized_users.csv' % DATA_DIR
+NORMALIZED_RATINGS_CSV = '%s/normalized_ratings.csv' % DATA_DIR
+
+ENCODED_BOOKS_CSV = "%s/encoded_books.csv" % DATA_DIR
+
+MODEL_FILE_PKL = "%s/rf6-ex6.pkl" % DATA_DIR
+
+
 def prepare_string(string):
     return str(string).strip().lower().replace('-', '_')
 
@@ -61,7 +79,7 @@ def sanitize_year_of_publication(books):
     return books
 
 
-def get_books(path="./data/BX-Books.csv"):
+def get_books(path=BOOKS_CSV):
     logging.info("getting books from", path)
     books = read_csv(path)
 
@@ -112,7 +130,7 @@ def split_city_state_country(users):
     return users
 
 
-def get_users(path="./data/BX-Users.csv"):
+def get_users(path=USERS_CSV):
     logging.info("getting users from", path)
     users = read_csv(path)
 
@@ -130,7 +148,7 @@ def get_explicit_ratings(ratings):
     return explicit_ratings
 
 
-def get_ratings(books, path="./data/BX-Book-Ratings.csv", explicitOnly=True):
+def get_ratings(books, path=RATINGS_CSV, explicitOnly=True):
     logging.info("getting ratings from", path)
     ratings = read_csv(path)
 
@@ -141,7 +159,7 @@ def get_ratings(books, path="./data/BX-Book-Ratings.csv", explicitOnly=True):
     ratings = ratings[ratings.isbn13.notna()]
     ratings = ratings[ratings.isbn13.isin(books.isbn13)]
 
-    if explicitOnly == True:
+    if explicitOnly:
         ratings = get_explicit_ratings(ratings)
 
     return ratings
@@ -224,15 +242,15 @@ def add_user_rating_mean_and_count(df, ratings):
 
 
 top_countries = None
-
-
 def normalize_country(df, all_countries, top_n=20):
     global top_countries
-    if top_countries == None:
+    if top_countries is None:
         logging.info("Creating top_countries")
         top_countries = all_countries.value_counts()[:top_n].index.tolist()
         top_countries = list(map(lambda x: str(x).strip().lower().replace(' ', '_'), top_countries))
-        top_countries.append("other")
+        if 'other' not in top_countries:
+            top_countries.append("other")
+
     encoded_users = df.copy()
     countries = encoded_users["country"]
     countries = list(map(lambda x: str(x).strip().lower().replace(' ', '_'), countries))
@@ -333,16 +351,17 @@ def remove_books_without_ratings(df, n=3):
     books_with_ratings = df[df["rating_count"] >= n]
     return books_with_ratings
 
-def get_normalized_data(books_path='./data/normalized_books.csv',
-                        users_path='./data/normalized_users.csv'
-                        ratings_path='./data/normalized_ratings.csv')
-    books = pd.read_csv(books_path , sep=",", encoding="utf-8")
+
+def get_normalized_data(books_path=NORMALIZED_BOOKS_CSV,
+                        users_path=NORMALIZED_USERS_CSV,
+                        ratings_path=NORMALIZED_RATINGS_CSV):
+    books = pd.read_csv(books_path, sep=",", encoding="utf-8")
     users = pd.read_csv(users_path, sep=",", encoding="utf-8")
     ratings = pd.read_csv(ratings_path, sep=",", encoding="utf-8")
     return books, users, ratings
 
-def normalized_data(books, users, ratings, explicitOnly=True):
 
+def normalized_data(books, users, ratings):
     logging.info("normalizing books")
     books = add_book_rating_mean_and_count(books, ratings)
     books = normalize_year_of_publication(books)
@@ -356,6 +375,10 @@ def normalized_data(books, users, ratings, explicitOnly=True):
     logging.info("normalizing ratings")
     ratings = normalize_ratings_for_user(ratings, users)
 
+    logging.info("saving normalized data")
+    books.to_csv(NORMALIZED_BOOKS_CSV)
+    users.to_csv(NORMALIZED_USERS_CSV)
+    ratings.to_csv(NORMALIZED_RATINGS_CSV)
     return books, users, ratings
 
 
@@ -389,18 +412,17 @@ def hot_encode_users(users):
     users = hot_encode_state(users)
     return users
 
-def get_model(path):
 
+def get_model(path):
     if not exists(path):
         logging.info("model", path, "not found")
         raise Exception("Model not found: ", path)
 
     model = read_object(path)
-
     return model
 
-def train_model(path, X, Y):
 
+def train_model(path, X, Y):
     # TODO: remove random_state
     logging.info("Creating new model")
     rfc = RandomForestClassifier(n_estimators=100, min_weight_fraction_leaf=0, n_jobs=3, random_state=1)
@@ -425,25 +447,15 @@ def dump_object(path, obj):
     with open(path, "wb") as file:
         pickle.dump(obj, file)
 
+
 def read_object(path):
     with open(path, "rb") as file:
         return pickle.load(file)
 
-def recommend_items_rf(norm_books, norm_users, norm_ratings, age, locationCountry, userId=None,
-                       locationState=None, locationCity=None, itemId=None,
+
+def recommend_items_rf(norm_books, norm_users, norm_ratings,
+                       age, locationCountry, userId=None, locationState=None, locationCity=None, itemId=None,
                        numberOfItems=10):
-
-    data_path = "./data" # docker
-    # data_path = "../../data" # local
-
-    # # for local testing
-    # norm_books, norm_users, norm_ratings = get_normalized_data(books_path=data_path + '/BX-Books.csv',
-    #                                             users_path=data_path + '/BX-Users.csv',
-    #                                             ratings_path=data_path + '/BX-Book-Ratings.csv')
-
-    # Specify model to load/train
-    model_file = data_path + "/models/rf6-ex6.pkl"
-
     # drop unused isbn column
     norm_books = norm_books.drop(["isbn"], axis=1)
     norm_ratings = norm_ratings.drop(["isbn"], axis=1)
@@ -466,12 +478,9 @@ def recommend_items_rf(norm_books, norm_users, norm_ratings, age, locationCountr
     df_user = df_user.filter(regex="age|country_|state_", axis=1)
 
     # hot encode data
-    encoded_books_path = data_path + "/encoded_books.csv"
-
-    if not exists(encoded_books_path):
+    if not exists(ENCODED_BOOKS_CSV):
         raise Exception("Encoded Books does not exist")
-
-    encoded_books = pd.read_csv(encoded_books_path, sep=",", encoding="utf-8")
+    encoded_books = pd.read_csv(ENCODED_BOOKS_CSV, sep=",", encoding="utf-8")
 
     df_books = encoded_books.filter(regex="isbn13|normalized_year_of_publication|publisher_", axis=1)
 
@@ -481,7 +490,7 @@ def recommend_items_rf(norm_books, norm_users, norm_ratings, age, locationCountr
     # combine dataset
     df_input = df_books.assign(**df_user.iloc[0])
 
-    rfc = get_model(model_file)
+    rfc = get_model(MODEL_FILE_PKL)
 
     # predict all books and return top-rated
     logging.info("Running prediction")
@@ -501,8 +510,17 @@ def recommend_items_rf(norm_books, norm_users, norm_ratings, age, locationCountr
     return predictions[:numberOfItems]
 
 
-# print("Predictions:")
-# print(recommend_items_rf(20, "usa"))
-
 def flatten(l):
     return [item for sublist in l for item in sublist]
+
+
+# run random forest prediction
+print("Predictions:")
+norm_books, norm_users, norm_ratings = get_normalized_data()
+print(recommend_items_rf(norm_books, norm_users, norm_ratings, age=20, locationCountry="USA"))
+
+# run to normalize books
+# books = get_books()
+# users = get_users()
+# ratings = get_ratings(books)
+# norm_books, norm_users, norm_ratings = normalized_data(books, users, ratings)
