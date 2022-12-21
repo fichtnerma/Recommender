@@ -334,14 +334,7 @@ def remove_books_without_ratings(df, n=3):
     return books_with_ratings
 
 
-def get_normalized_data(
-        books_path='./data/BX-Books.csv',
-        users_path='./data/BX-Users.csv',
-        ratings_path='./data/BX-Book-Ratings.csv',
-        explicitOnly=True):
-    books = get_books(books_path)
-    users = get_users(users_path)
-    ratings = get_ratings(books, ratings_path, explicitOnly)
+def get_normalized_data(books, users, ratings, explicitOnly=True):
 
     logging.info("normalizing books")
     books = add_book_rating_mean_and_count(books, ratings)
@@ -429,24 +422,24 @@ def read_object(path):
     with open(path, "rb") as file:
         return pickle.load(file)
 
-def recommend_items_rf(age, locationCountry, userId=None,
+def recommend_items_rf(norm_books, norm_users, norm_ratings, age, locationCountry, userId=None,
                        locationState=None, locationCity=None, itemId=None,
                        numberOfItems=10):
 
     data_path = "./data" # docker
     # data_path = "../../data" # local
 
-    # for local testing
-    books, users, ratings = get_normalized_data(books_path=data_path + '/BX-Books.csv',
-                                                users_path=data_path + '/BX-Users.csv',
-                                                ratings_path=data_path + '/BX-Book-Ratings.csv')
+    # # for local testing
+    # norm_books, norm_users, norm_ratings = get_normalized_data(books_path=data_path + '/BX-Books.csv',
+    #                                             users_path=data_path + '/BX-Users.csv',
+    #                                             ratings_path=data_path + '/BX-Book-Ratings.csv')
 
     # Specify model to load/train
     model_file = data_path + "/models/rf6-ex6.pkl"
 
     # drop unused isbn column
-    books = books.drop(["isbn"], axis=1)
-    ratings = ratings.drop(["isbn"], axis=1)
+    norm_books = norm_books.drop(["isbn"], axis=1)
+    norm_ratings = norm_ratings.drop(["isbn"], axis=1)
 
     # create user input
     user = pd.DataFrame([{
@@ -460,7 +453,7 @@ def recommend_items_rf(age, locationCountry, userId=None,
 
     # create users
     df_user = user
-    df_user = normalize_country(df_user, users.country)
+    df_user = normalize_country(df_user, norm_users.country)
     df_user = normalize_state(df_user)
     df_user = hot_encode_users(df_user)
     df_user = df_user.filter(regex="age|country_|state_", axis=1)
@@ -471,7 +464,7 @@ def recommend_items_rf(age, locationCountry, userId=None,
     if not exists(encoded_books_path):
         raise Exception("Encoded Books does not exist")
 
-    encoded_books = read_object(encoded_books_path)
+    encoded_books = pd.read_csv(encoded_books_path, sep=",", encoding="utf-8")
 
     df_books = encoded_books.filter(regex="isbn13|normalized_year_of_publication|publisher_", axis=1)
 
@@ -492,7 +485,7 @@ def recommend_items_rf(age, locationCountry, userId=None,
     predictions = predictions.reset_index()
     predicted_ratings = pd.DataFrame(rfc_pred, columns=["predicted_book_rating"])
     predictions = predictions.join(predicted_ratings)
-    predictions = predictions.merge(books, on="isbn13", how="left")
+    predictions = predictions.merge(norm_books, on="isbn13", how="left")
     predictions = predictions.sort_values("predicted_book_rating", na_position="first", ascending=False)
 
     logging.info("Predictions:")
