@@ -333,7 +333,8 @@ def remove_books_without_ratings(df, n=3):
 def get_normalized_data(
         books_path='./data/BX-Books.csv',
         users_path='./data/BX-Users.csv',
-        ratings_path='./data/BX-Book-Ratings.csv', explicitOnly=True):
+        ratings_path='./data/BX-Book-Ratings.csv',
+        explicitOnly=True):
     books = get_books(books_path)
     users = get_users(users_path)
     ratings = get_ratings(books, ratings_path, explicitOnly)
@@ -430,8 +431,8 @@ def recommend_items_rf(userId, age, locationCountry, locationState=None, locatio
 
     # combine dataset
     df = df_ratings
-    df = df.merge(df_books)
-    df = df.merge(df_users)
+    df = df.merge(df_books, on="isbn13", how="left")
+    df = df.merge(df_users, on="user_id", how="left")
 
     # Features
     X = df.drop(['user_id', 'book_rating'], axis=1)
