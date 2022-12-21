@@ -25,7 +25,7 @@ export default function BookDetailModal(props: BookDetailModelProps) {
 		userRatings
 	} = props;
 
-	const [similarItems, setSimilarItems] = useState<Book[]>();
+	const [similarBooks, setSimilarBooks] = useState<Book[]>([]);
 
 	useEffect(() => {
 		document.addEventListener("keydown", handleCloseOnEsc);
@@ -41,7 +41,7 @@ export default function BookDetailModal(props: BookDetailModelProps) {
 				isbn10,
 				recommendationCount: 5
 			}).then((res) => {
-				setSimilarItems(res.data);
+				setSimilarBooks(res.data);
 			});
 
 		} catch (e) {
@@ -91,9 +91,10 @@ export default function BookDetailModal(props: BookDetailModelProps) {
 				<div>
 					<h2>Diese Bücher könnten dir auch gefallen</h2>
 
-					{similarItems?.length
-						? <BookRow books={similarItems} onItemClick={(book) => {
+					{similarBooks?.length
+						? <BookRow books={similarBooks} onItemClick={(book) => {
 							setSelectedBook(book);
+							setSimilarBooks([])
 							getSimilarBooks(book.isbn);
 						}}/>
 						: <LoadingIndicator/>

@@ -5,8 +5,8 @@ from collections import defaultdict
 from flask import Flask
 from flask_restful import Api, Resource, reqparse
 
-from content_based_filtering import ContentBasedFiltering
 from Utils import *
+from content_based_filtering import ContentBasedFiltering
 
 app = Flask(__name__)
 api = Api(app)
@@ -20,7 +20,7 @@ bookData = pd.read_csv("./data/editions_dump.csv", sep=",", encoding="utf-8")
 books_with_mean_count = add_book_rating_mean_and_count(books, ratings)
 
 # models
-cbf = ContentBasedFiltering(bookData)
+cbf = ContentBasedFiltering(books_with_mean_count, bookData)
 
 logging.info("Applicaton ready!")
 
@@ -164,11 +164,28 @@ class SimilarBooks(Resource):
     def post(self):
         args = self.similar_Books_args.parse_args()
         isbn13 = str(convert_isbn(args["isbn10"]))
-        similar_books = cbf.recommend_tf_idf(isbn13, args["recommendationCount"])
+        similar_books = cbf.recommend_tf_idf(isbn13, args["recommendationCount"] + 1)
+
+        # return sample of most popular if no similar items are found
+        if similar_books is None:
+            app.logger.info(f'No similar books found. Returning {args["recommendationCount"]} most popular')
+            most_rated = get_most_rated_books(books_with_mean_count, 50)
+            mask = most_rated["isbn"] != args["isbn10"]
+            most_rated = most_rated[mask]
+            most_rated = most_rated.sort_values('rating_mean', ascending=False)
+            json_str = most_rated.sample(n=args["recommendationCount"]).to_json(orient='records')
+            parsed = json.loads(json_str)
+            return parsed
+
+        # filter sent book out of the similar items if present
+        mask = similar_books["isbn"] != args["isbn10"]
+        similar_books = similar_books[mask]
+        similar_books = similar_books[:args["recommendationCount"]]
+
         app.logger.info("Sent isbn: " + args["isbn10"])
         app.logger.info("Similar books for isbn: " + isbn13 + " are:")
         app.logger.info(similar_books)
-        similar_books = books.merge(similar_books, on=['isbn13', 'isbn', 'book_title'], how='inner')
+        similar_books = books_with_mean_count.merge(similar_books, on=['isbn13', 'isbn', 'book_title'], how='inner')
         parsed = similar_books.to_json(orient='records')
         return json.loads(parsed)
 
