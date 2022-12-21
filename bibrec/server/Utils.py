@@ -378,7 +378,7 @@ def hot_encode_state(users):
 
 
 def hot_encode_books(books):
-    logging.info("hot encoding books")
+    print("hot encoding books")
     books = hot_encode_publisher(books)
     return books
 
@@ -395,8 +395,7 @@ def get_model(path):
         logging.info("model", path, "not found")
         raise Exception("Model not found: ", path)
 
-    with open(path, "rb") as file:
-        model = pickle.load(file)
+    model = read_object(path)
 
     return model
 
@@ -416,14 +415,22 @@ def train_model(path, X, Y):
     rfc.fit(df_input, Y)
 
     # Save the model to a file
-    with open(path, "wb") as file:
-        logging.info("Saving model", path)
-        pickle.dump(rfc, file)
+    dump_object(path, rfc)
 
     return rfc
 
 
-def recommend_items_rf(userId, age, locationCountry, locationState=None, locationCity=None, itemId=None,
+def dump_object(path, obj):
+    # Save the object to a file
+    with open(path, "wb") as file:
+        pickle.dump(obj, file)
+
+def read_object(path):
+    with open(path, "rb") as file:
+        return pickle.load(file)
+
+def recommend_items_rf(age, locationCountry, userId=None,
+                       locationState=None, locationCity=None, itemId=None,
                        numberOfItems=10):
 
     data_path = "./data" # docker
@@ -459,11 +466,16 @@ def recommend_items_rf(userId, age, locationCountry, locationState=None, locatio
     df_user = df_user.filter(regex="age|country_|state_", axis=1)
 
     # hot encode data
-    encoded_books = hot_encode_books(books)
-    df_books = encoded_books.filter(regex="isbn13|normalized_year_of_publication|publisher_", axis=1)
+    encoded_books_path = data_path + "/encoded_books.pkl"
+    if exists(encoded_books_path):
+        print("loading encoded books")
+        encoded_books = read_object(encoded_books_path)
+    else:
+        print("encoding books ...")
+        encoded_books = hot_encode_books(books)
+        dump_object(encoded_books_path, encoded_books)
 
-    # df = df_ratings.filter(regex="isbn13|user_id|normalized_rating", axis=1)
-    df_ratings = ratings.filter(regex="isbn13|user_id|book_rating", axis=1)
+    df_books = encoded_books.filter(regex="isbn13|normalized_year_of_publication|publisher_", axis=1)
 
     # TODO remve this after test
     df_books = df_books[:10]
@@ -483,15 +495,16 @@ def recommend_items_rf(userId, age, locationCountry, locationState=None, locatio
     predicted_ratings = pd.DataFrame(rfc_pred, columns=["predicted_book_rating"])
     predictions = predictions.join(predicted_ratings)
     predictions = predictions.merge(books, on="isbn13", how="left")
+    predictions = predictions.sort_values("predicted_book_rating", na_position="first", ascending=False)
 
     logging.info("Predictions:")
-    logging.info(predictions)
+    logging.info(predictions[:numberOfItems])
 
-    return predictions
+    return predictions[:numberOfItems]
 
 
 # print("Predictions:")
-# print(recommend_items_rf(1, 20, "usa"))
+# print(recommend_items_rf(20, "usa"))
 
 def flatten(l):
     return [item for sublist in l for item in sublist]

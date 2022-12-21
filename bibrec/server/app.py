@@ -22,6 +22,7 @@ books_with_mean_count = add_book_rating_mean_and_count(books, ratings)
 # models
 cbf = ContentBasedFiltering(bookData)
 
+logging.info("Applicaton ready!")
 
 # Register User
 class RegisterUser(Resource):
@@ -98,8 +99,11 @@ class UserRecommendations(Resource):
 
     def post(self):
         args = self.user_rec_args.parse_args()
-
-        json_str = books_with_mean_count.sample(n=args["recommendationCount"]).to_json(orient='records')
+        app.logger.info(f'UserRecommendations run prediction for ', args.userId)
+        user = users[users["user_id"] == args.userId]
+        recommendations = recommend_items_rf(user.userId, user.age, user.country, numberOfItems=args.recommendationCount)
+        app.logger.info('Predictions', recommendations[:3])
+        json_str = recommendations.to_json(orient='records')
         parsed = json.loads(json_str)
         return parsed
 
@@ -225,9 +229,12 @@ class RecommendItemsRF(Resource):
 
     def post(self):
         args = self.args.parse_args()
+        app.logger.info(f'RecommendItemsRF run prediction')
         recommendations = recommend_items_rf(args.userId, args.age, args.locationCountry, args.locationState, args.locationCity, args.itemId, args.numberOfItems)
-        json_str = recommendations.to_json(orient='records')
-        return  json_str
+        app.logger.info('Predictions', recommendations[:3])
+        json_str = recommendations[:3].to_json(orient='records')
+        parsed = json.loads(json_str)
+        return parsed
 
 
 # Frontend APIs
