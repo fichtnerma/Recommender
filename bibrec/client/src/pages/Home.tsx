@@ -24,12 +24,14 @@ export default function Home({ user }: HomeProps) {
 	useEffect(() => {
 		try {
 			if (user) {
-				axios.post("http://localhost:4000/userRecommendations", {
-					userId: user?.id,
-					recommendationCount: 20
-				}).then((res) => {
-					setUserRecommendations(res.data);
-				});
+				if (!user.country || !user.age) {
+					axios.post("http://localhost:4000/userRecommendations", {
+						userId: user?.id,
+						recommendationCount: 20
+					}).then((res) => {
+						setUserRecommendations(res.data);
+					});
+				}
 
 				axios.get("http://localhost:4000/ratings", { params: { userId: user?.id } })
 					.then((res) => {
@@ -76,7 +78,7 @@ export default function Home({ user }: HomeProps) {
 				/>
 			) : null}
 
-			{user ?
+			{user && user.country && user.age ?
 				<BooksBlock title={"Deine Empfehlungen"} items={userRecommendations} onItemClick={onItemClick}/> : null}
 
 			<BooksBlock title={"Top Bücher in deinem Land"} items={topInCountry} onItemClick={onItemClick}/>
