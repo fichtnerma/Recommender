@@ -333,8 +333,15 @@ def remove_books_without_ratings(df, n=3):
     books_with_ratings = df[df["rating_count"] >= n]
     return books_with_ratings
 
+def get_normalized_data(books_path='./data/normalized_books.csv',
+                        users_path='./data/normalized_users.csv'
+                        ratings_path='./data/normalized_ratings.csv')
+    books = pd.read_csv(books_path , sep=",", encoding="utf-8")
+    users = pd.read_csv(users_path, sep=",", encoding="utf-8")
+    ratings = pd.read_csv(ratings_path, sep=",", encoding="utf-8")
+    return books, users, ratings
 
-def get_normalized_data(books, users, ratings, explicitOnly=True):
+def normalized_data(books, users, ratings, explicitOnly=True):
 
     logging.info("normalizing books")
     books = add_book_rating_mean_and_count(books, ratings)

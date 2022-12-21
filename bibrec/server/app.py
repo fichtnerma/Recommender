@@ -14,10 +14,14 @@ api = Api(app)
 users_dict = defaultdict(list)
 users_ratings = pd.DataFrame(columns=["user_id", "isbn", "book_rating"])
 
+# get data
 books = get_books()
 users = get_users()
 ratings = get_ratings(books)
-norm_books, norm_users, norm_ratings = get_normalized_data(books, users, ratings)
+
+# get normalized data
+# norm_books, norm_users, norm_ratings = normalized_data(books, users, ratings)
+norm_books, norm_users, norm_ratings = get_normalized_data()
 
 # todo
 bookData = pd.read_csv("./data/editions_dump.csv", sep=",", encoding="utf-8")
