@@ -2,7 +2,11 @@ import logging
 
 import numpy as np
 import pandas as pd
+import pickle
 
+from os.path import exists
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
 
 def prepare_string(string):
     return str(string).strip().lower().replace('-', '_')
@@ -385,101 +389,109 @@ def hot_encode_users(users):
     users = hot_encode_state(users)
     return users
 
+def get_model(path):
+
+    if not exists(path):
+        logging.info("model", path, "not found")
+        raise Exception("Model not found: ", path)
+
+    with open(path, "rb") as file:
+        model = pickle.load(file)
+
+    return model
+
+def train_model(path, X, Y):
+
+    # TODO: remove random_state
+    logging.info("Creating new model")
+    rfc = RandomForestClassifier(n_estimators=100, min_weight_fraction_leaf=0, n_jobs=3, random_state=1)
+
+    logging.info("Training model:", path)
+
+    # train on training data set
+    X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.30)
+    df_input = X_test
+
+    # TODO: train on entire data set
+    rfc.fit(df_input, Y)
+
+    # Save the model to a file
+    with open(path, "wb") as file:
+        logging.info("Saving model", path)
+        pickle.dump(rfc, file)
+
+    return rfc
+
 
 def recommend_items_rf(userId, age, locationCountry, locationState=None, locationCity=None, itemId=None,
-                       numberOfItems=10, retrain=False):
-    from sklearn.model_selection import train_test_split
-    from sklearn.ensemble import RandomForestClassifier
+                       numberOfItems=10):
 
-    # books, users, ratings = get_normalized_data()
+    data_path = "./data" # docker
+    # data_path = "../../data" # local
 
     # for local testing
-    books, users, ratings = get_normalized_data(books_path='../../data/BX-Books.csv',
-                                                users_path='../../data/BX-Users.csv',
-                                                ratings_path='../../data/BX-Book-Ratings.csv')
+    books, users, ratings = get_normalized_data(books_path=data_path + '/BX-Books.csv',
+                                                users_path=data_path + '/BX-Users.csv',
+                                                ratings_path=data_path + '/BX-Book-Ratings.csv')
+
+    # Specify model to load/train
+    model_file = data_path + "/models/rf6-ex6.pkl"
 
     # drop unused isbn column
     books = books.drop(["isbn"], axis=1)
     ratings = ratings.drop(["isbn"], axis=1)
 
-    # limit ratings
-    limit = 1000
-    logging.info("limiting data to {} ratings".format(limit))
-    top_ratings = ratings.groupby('isbn13').user_id.count().sort_values(ascending=False)
-    top_ratings = top_ratings[:limit]
-    top_ratings = top_ratings.reset_index()
-    # user_id => nr of ratings
-    top_ratings = top_ratings.drop('user_id', axis=1)
+    # create user input
+    user = pd.DataFrame([{
+        'age': age,
+        'city': locationCity,
+        'state': locationState,
+        'country': locationCountry
+    }])
+    logging.info("Running prediction for user:")
+    logging.info(user)
 
-    # filter ratings
-    explicit_ratings = ratings[ratings.book_rating != 0]
-    top_ratings = top_ratings.merge(explicit_ratings, on='isbn13', how='inner')
-
-    # limit user and books
-    filtered_books = books[books.isbn13.isin(top_ratings.isbn13)]
-    filtered_users = users[users.user_id.isin(top_ratings.user_id)]
+    # create users
+    df_user = user
+    df_user = normalize_country(df_user, users.country)
+    df_user = normalize_state(df_user)
+    df_user = hot_encode_users(df_user)
+    df_user = df_user.filter(regex="age|country_|state_", axis=1)
 
     # hot encode data
-    encoded_books = hot_encode_books(filtered_books)
-    encoded_users = hot_encode_users(filtered_users)
-
-    # RF Features: Country, State, Age, Year-of-Publication, Publisher
+    encoded_books = hot_encode_books(books)
     df_books = encoded_books.filter(regex="isbn13|normalized_year_of_publication|publisher_", axis=1)
-    df_users = encoded_users.filter(regex="user_id|age|country_|state_", axis=1)
+
     # df = df_ratings.filter(regex="isbn13|user_id|normalized_rating", axis=1)
-    df_ratings = top_ratings.filter(regex="isbn13|user_id|book_rating", axis=1)
+    df_ratings = ratings.filter(regex="isbn13|user_id|book_rating", axis=1)
+
+    # TODO remve this after test
+    df_books = df_books[:10]
 
     # combine dataset
-    df = df_ratings
-    df = df.merge(df_books, on="isbn13", how="left")
-    df = df.merge(df_users, on="user_id", how="left")
+    df_input = df_books.assign(**df_user.iloc[0])
 
-    # Features
-    X = df.drop(['user_id', 'book_rating'], axis=1)
-    # Prediction
-    Y = df['book_rating']
+    rfc = get_model(model_file)
 
-    from os.path import exists
-    import pickle
-
-    # Load the model from the file
-    model_file = "rf-model.pkl"
-    if not retrain and exists(model_file):
-        logging.info("loading model", model_file)
-        with open(model_file, "rb") as file:
-            rfc = pickle.load(file)
-    else:
-        logging.info("Creating new model")
-        rfc = RandomForestClassifier(n_estimators=100, min_weight_fraction_leaf=0, n_jobs=3, random_state=1)
-        logging.info("Train entire dataset")
-
-        # TODO: train on entire data set
-        # rfc.fit(X, Y)
-
-        # train on training data set
-        X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.30)
-        df_input = X_test
-
-        # train model
-        rfc.fit(df_input, Y)
-
-        # Save the model to a file
-        with open(model_file, "wb") as file:
-            logging.info("Saving model", model_file)
-            pickle.dump(rfc, file)
-
-    # TODO: train on entire data set
-    df_input = X
-
-    # TODO: predict all books and return top rated
+    # predict all books and return top-rated
     logging.info("Running prediction")
     rfc_pred = rfc.predict(df_input)
-    logging.info("Predictions:", rfc_pred)
-    return rfc_pred.tolist()
+
+    # convert predictions to books
+    predictions = df_books.filter(regex="isbn13", axis=1)
+    predictions = predictions.reset_index()
+    predicted_ratings = pd.DataFrame(rfc_pred, columns=["predicted_book_rating"])
+    predictions = predictions.join(predicted_ratings)
+    predictions = predictions.merge(books, on="isbn13", how="left")
+
+    logging.info("Predictions:")
+    logging.info(predictions)
+
+    return predictions
 
 
-# recommend_items_rf(1, 20, "usa")
-
+# print("Predictions:")
+# print(recommend_items_rf(1, 20, "usa"))
 
 def flatten(l):
     return [item for sublist in l for item in sublist]

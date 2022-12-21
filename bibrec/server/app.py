@@ -225,7 +225,9 @@ class RecommendItemsRF(Resource):
 
     def post(self):
         args = self.args.parse_args()
-        return recommend_items_rf(args.userId, args.age, args.locationCountry, args.locationState, args.locationCity, args.itemId, args.numberOfItems)
+        recommendations = recommend_items_rf(args.userId, args.age, args.locationCountry, args.locationState, args.locationCity, args.itemId, args.numberOfItems)
+        json_str = recommendations.to_json(orient='records')
+        return  json_str
 
 
 # Frontend APIs
