@@ -554,7 +554,7 @@ def recommend_items_rf(norm_books, norm_users, norm_ratings,
 def flatten(l):
     return [item for sublist in l for item in sublist]
 
-# run random forest prediction
+# # run random forest prediction
 # print("Predictions:")
 # norm_books, norm_users, norm_ratings = get_normalized_data()
 # print(recommend_items_rf(norm_books, norm_users, norm_ratings, age=20, locationCountry="USA"))
