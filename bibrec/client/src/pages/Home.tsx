@@ -78,7 +78,7 @@ export default function Home({ user }: HomeProps) {
 				/>
 			) : null}
 
-			{user && user.country && user.age ?
+			{user && user.country && user.age && userRatings.length >= 5 ?
 				<BooksBlock title={"Deine Empfehlungen"} items={userRecommendations} onItemClick={onItemClick}/> : null}
 
 			<BooksBlock title={"Top Bücher in deinem Land"} items={topInCountry} onItemClick={onItemClick}/>
