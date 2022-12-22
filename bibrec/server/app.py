@@ -29,8 +29,17 @@ books_with_mean_count = add_book_rating_mean_and_count(books, ratings)
 # models
 cbf = ContentBasedFiltering(books_with_mean_count, bookData)
 
-logging.info("Applicaton ready!")
+# random forest
+if exists(MODEL_FILE_PKL):
+    # get model
+    rfc = get_model(MODEL_FILE_PKL)
+else:
+    # train model with pre-encoded files
+    encoded_books = get_encoded_books()
+    encoded_users = get_encoded_users()
+    rfc = train_model_rf_encoded(encoded_books, encoded_users, norm_ratings)
 
+logging.info("Applicaton ready!")
 
 # Register User
 class RegisterUser(Resource):
@@ -109,7 +118,7 @@ class UserRecommendations(Resource):
         args = self.user_rec_args.parse_args()
         app.logger.info(f'UserRecommendations run prediction for ', args.userId)
         user = users[users["user_id"] == args.userId]
-        recommendations = recommend_items_rf(norm_books, norm_users, norm_ratings, user.userId, user.age, user.country, numberOfItems=args.recommendationCount)
+        recommendations = recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, user.userId, user.age, user.country, numberOfItems=args.recommendationCount)
         app.logger.info('Predictions', recommendations)
         json_str = recommendations.to_json(orient='records')
         parsed = json.loads(json_str)
@@ -258,7 +267,7 @@ class RecommendItemsRF(Resource):
     def post(self):
         args = self.args.parse_args()
         app.logger.info(f'RecommendItemsRF run prediction')
-        recommendations = recommend_items_rf(norm_books,norm_users, norm_ratings, args.userId, args.age, args.locationCountry, args.locationState, args.locationCity, args.itemId, args.numberOfItems)
+        recommendations = recommend_items_rf(rfc, norm_books,norm_users, norm_ratings, args.userId, args.age, args.locationCountry, args.locationState, args.locationCity, args.itemId, args.numberOfItems)
         app.logger.info('Predictions', recommendations[:args.numberOfItems])
         json_str = recommendations[:args.numberOfItems].to_json(orient='records')
         parsed = json.loads(json_str)

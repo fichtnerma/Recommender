@@ -19,6 +19,11 @@ docker-compose up -d --build
 - [Baseline Most Popular](baseline.ipynb): Showcase Baseline with Best Rated Books Algorithm
 - [Random Forest Model](rf-model.ipynb): Evaluation of Random Forest Algorithm
 
+### Scripts
+
+- [Train RF Model FULL](bibrec/server/train-rf-model-full.py): Normalize, hot-encode and train with all data from scratch
+- [Train RF Model Lightweight](bibrec/server/train-rf-model.py): Uses pre-hot-encoded files and trains with all data
+
 ### Evaluation API Strategy
 
 - Daten wurden gefiltert

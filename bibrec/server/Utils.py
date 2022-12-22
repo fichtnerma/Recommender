@@ -8,23 +8,18 @@ from os.path import exists
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 
-DATA_DIR = "./data"
-
-# for local testing
-# DATA_DIR = "../../data"
-
+# ENV VARS
+DATA_DIR = "./data"       # for docker
+DATA_DIR = "../../data"   # for local testing
 BOOKS_CSV = "%s/BX-Books.csv" % DATA_DIR
 USERS_CSV = "%s/BX-Users.csv" % DATA_DIR
 RATINGS_CSV = "%s/BX-Book-Ratings.csv" % DATA_DIR
-
 NORMALIZED_BOOKS_CSV = '%s/normalized_books.csv' % DATA_DIR
 NORMALIZED_USERS_CSV = '%s/normalized_users.csv' % DATA_DIR
 NORMALIZED_RATINGS_CSV = '%s/normalized_ratings.csv' % DATA_DIR
-
 ENCODED_BOOKS_CSV = "%s/encoded_books.csv" % DATA_DIR
-
+ENCODED_USERS_CSV = "%s/encoded_users.csv" % DATA_DIR
 MODEL_FILE_PKL = "%s/rf-model.pkl" % DATA_DIR
-
 
 def prepare_string(string):
     return str(string).strip().lower().replace('-', '_')
@@ -391,6 +386,9 @@ def get_normalized_data(books_path=NORMALIZED_BOOKS_CSV,
     users = pd.read_csv(users_path, sep=",", encoding="utf-8", na_filter=False)
     ratings = pd.read_csv(ratings_path, sep=",", encoding="utf-8", na_filter=False)
 
+    books = books.drop(["isbn"], axis=1)
+    ratings = ratings.drop(["isbn"], axis=1)
+
     # init global vars and ensure all normalized columns are loaded
     init_top_publisher(books, top_n=1000)
     init_top_countries(users, top_n=1000)
@@ -417,36 +415,36 @@ def normalize_data(books, users, ratings):
 
 
 
-def export_normalized_data(books, users, ratings):
+def export_normalized_data(norm_books, norm_users, norm_ratings):
     logging.info("saving normalized data")
-    books.to_csv(NORMALIZED_BOOKS_CSV, index=False)
-    users.to_csv(NORMALIZED_USERS_CSV, index=False)
-    ratings.to_csv(NORMALIZED_RATINGS_CSV, index=False)
-    return books, users, ratings
+    norm_books.to_csv(NORMALIZED_BOOKS_CSV, index=False)
+    norm_users.to_csv(NORMALIZED_USERS_CSV, index=False)
+    norm_ratings.to_csv(NORMALIZED_RATINGS_CSV, index=False)
+    return norm_books, norm_users, norm_ratings
 
 
-def hot_encode_publisher(books):
+def hot_encode_publisher(norm_books):
     logging.info("hot encoding publisher")
-    encoded_books = pd.get_dummies(books, columns=['publisher'], prefix='publisher')
+    encoded_books = pd.get_dummies(norm_books, columns=['publisher'], prefix='publisher')
     return encoded_books
 
 
-def hot_encode_country(users):
+def hot_encode_country(norm_users):
     logging.info("hot encoding country")
-    encoded_users = pd.get_dummies(users, columns=['country'], prefix='country')
+    encoded_users = pd.get_dummies(norm_users, columns=['country'], prefix='country')
     return encoded_users
 
 
-def hot_encode_state(users):
+def hot_encode_state(norm_users):
     logging.info("hot encoding state")
-    encoded_users = pd.get_dummies(users, columns=['state'], prefix='state')
+    encoded_users = pd.get_dummies(norm_users, columns=['state'], prefix='state')
     return encoded_users
 
 
-def hot_encode_books(books):
+def hot_encode_books(norm_books):
     print("hot encoding books")
-    books = hot_encode_publisher(books)
-    return books
+    norm_books = hot_encode_publisher(norm_books)
+    return norm_books
 
 
 def hot_encode_users(users):
@@ -455,41 +453,61 @@ def hot_encode_users(users):
     users = hot_encode_state(users)
     return users
 
-def get_encoded_books():
-    if not exists(ENCODED_BOOKS_CSV):
+def get_encoded_books(path=ENCODED_BOOKS_CSV):
+    if not exists(path):
         raise Exception("Encoded Books does not exist")
-    encoded_books = pd.read_csv(ENCODED_BOOKS_CSV, sep=",", encoding="utf-8", index_col=False)
+    encoded_books = pd.read_csv(path, sep=",", encoding="utf-8", index_col=False)
     return encoded_books
 
+def get_encoded_users(path=ENCODED_USERS_CSV):
+    if not exists(path):
+        raise Exception("Encoded Users does not exist")
+    encoded_users = pd.read_csv(path, sep=",", encoding="utf-8", index_col=False)
+    return encoded_users
 
 def get_model(path):
     if not exists(path):
         logging.info("model", path, "not found")
         raise Exception("Model not found: ", path)
 
+    logging.info("Loading RF model:", path)
     model = read_object(path)
     return model
 
 
-def train_model(path, X, Y):
+def train_model_rf(books, users, ratings):
+
+    logging.info("Encoding Books")
+    encoded_books = hot_encode_books(books)
+
+    logging.info("Encoding Users")
+    encoded_users = hot_encode_users(users)
+
+    return train_model_rf_encoded(encoded_books, encoded_users, ratings)
+
+def train_model_rf_encoded(encoded_books, encoded_users, ratings):
+    # RF Features: Country, State, Age, Year-of-Publication, Publisher
+    df_books = encoded_books.filter(regex="isbn13|normalized_year_of_publication|publisher_", axis=1)
+    df_users = encoded_users.filter(regex="user_id|age|country_|state_", axis=1)
+    df_ratings = ratings.filter(regex="isbn13|user_id|book_rating", axis=1)
+
+    # filter dataset
+    df = df_ratings
+    df = df.merge(df_books, on="isbn13", how="left")
+    df = df.merge(df_users, on="user_id", how="left")
+
+    # create inputs
+    X = df.drop(['user_id', 'book_rating'], axis=1)
+    Y = df['book_rating']
+
+    logging.info("Training new model:")
     # TODO: remove random_state
     logging.info("Creating new model")
-    rfc = RandomForestClassifier(n_estimators=100, min_weight_fraction_leaf=0, n_jobs=3, random_state=1)
+    rfc = RandomForestClassifier(n_estimators=100, min_weight_fraction_leaf=0, n_jobs=3, random_state=1, verbose=10)
 
-    logging.info("Training model:", path)
-
-    # train on training data set
-    X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.30)
-    df_input = X_test
-
-    # TODO: train on entire data set
-    rfc.fit(df_input, Y)
-
-    # Save the model to a file
-    dump_object(path, rfc)
-
-    return rfc
-
+    # train model
+    logging.info("Training model")
+    return rfc.fit(X, Y)
 
 def dump_object(path, obj):
     # Save the object to a file
@@ -501,7 +519,8 @@ def read_object(path):
     with open(path, "rb") as file:
         return pickle.load(file)
 
-def recommend_items_rf(norm_books, norm_users, norm_ratings,
+def recommend_items_rf(rfc,
+                       norm_books, norm_users, norm_ratings,
                        age, locationCountry, userId=None, locationState=None, locationCity=None, itemId=None,
                        numberOfItems=10):
     # drop unused isbn column
@@ -509,13 +528,13 @@ def recommend_items_rf(norm_books, norm_users, norm_ratings,
     norm_ratings = norm_ratings.drop(["isbn"], axis=1)
 
     # create user input
+    logging.info("Running prediction for user:")
     user = pd.DataFrame([{
         'age': age,
         'city': locationCity,
         'state': locationState,
         'country': locationCountry
     }])
-    logging.info("Running prediction for user:")
     logging.info(user)
 
     # create users
@@ -528,7 +547,6 @@ def recommend_items_rf(norm_books, norm_users, norm_ratings,
     # TODO: model was not trained with these columns
     df_user = df_user.drop("state_", axis=1)
     df_user = df_user.drop("state_n/a", axis=1)
-    print(df_user.describe())
 
     # hot encode data
     encoded_books = get_encoded_books()
@@ -536,8 +554,6 @@ def recommend_items_rf(norm_books, norm_users, norm_ratings,
 
     # combine dataset
     df_input = df_books.assign(**df_user.iloc[0])
-
-    rfc = get_model(MODEL_FILE_PKL)
 
     # predict all books and return top-rated
     logging.info("Running prediction")
@@ -577,3 +593,4 @@ def flatten(l):
 # print("top countries", get_top_countries())
 # print("top states", get_top_states())
 # print("top publisher", get_top_publisher())
+
