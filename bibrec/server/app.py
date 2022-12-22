@@ -15,6 +15,7 @@ users_dict = defaultdict(list)
 users_ratings = pd.DataFrame(columns=["user_id", "isbn", "book_rating"])
 
 # get data
+logging.info("Getting data!")
 books = get_books()
 users = get_users()
 ratings = get_ratings(books)

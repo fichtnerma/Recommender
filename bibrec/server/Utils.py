@@ -10,7 +10,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 # ENV VARS
 DATA_DIR = "./data"       # for docker
-DATA_DIR = "../../data"   # for local testing
+# DATA_DIR = "../../data"   # for local testing
 BOOKS_CSV = "%s/BX-Books.csv" % DATA_DIR
 USERS_CSV = "%s/BX-Users.csv" % DATA_DIR
 RATINGS_CSV = "%s/BX-Book-Ratings.csv" % DATA_DIR
@@ -386,8 +386,11 @@ def get_normalized_data(books_path=NORMALIZED_BOOKS_CSV,
     users = pd.read_csv(users_path, sep=",", encoding="utf-8", na_filter=False)
     ratings = pd.read_csv(ratings_path, sep=",", encoding="utf-8", na_filter=False)
 
-    books = books.drop(["isbn"], axis=1)
-    ratings = ratings.drop(["isbn"], axis=1)
+    if 'isbn' in books.columns:
+        books = books.drop(["isbn"], axis=1)
+
+    if 'isbn' in ratings.columns:
+        ratings = ratings.drop(["isbn"], axis=1)
 
     # init global vars and ensure all normalized columns are loaded
     init_top_publisher(books, top_n=1000)
