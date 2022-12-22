@@ -31,7 +31,7 @@ def prepare_string(string):
 
 
 def read_csv(path):
-    df = pd.read_csv(path, sep=";", encoding="latin-1")
+    df = pd.read_csv(path, sep=";", encoding="latin-1", index_col=False)
     df.columns = df.columns.map(prepare_string)
     return df
 
@@ -330,11 +330,9 @@ def normalize_publisher(df):
 
 # normalizing ratings
 def normalize_ratings_for_user(df, users_with_mean):
-    tmp_ratings = df.copy()
-    tmp_ratings = tmp_ratings.merge(users_with_mean, on='user_id', how='left')
-    tmp_ratings['normalized_rating'] = tmp_ratings.book_rating - tmp_ratings["user_mean"]
-    # normalized_ratings = df.merge(tmp_ratings[["isbn13", "normalized_rating"]], on='isbn13', how='left')
-    normalized_ratings = tmp_ratings[["isbn13", "normalized_rating"]].merge(df, on='isbn13', how='left')
+    tmp = df.merge(users_with_mean, on='user_id', how='inner')
+    normalized_ratings = df
+    normalized_ratings["normalized_rating"] = tmp.book_rating - tmp["user_mean"]
     return normalized_ratings
 
 
@@ -418,11 +416,12 @@ def normalize_data(books, users, ratings):
     return books, users, ratings
 
 
+
 def export_normalized_data(books, users, ratings):
     logging.info("saving normalized data")
-    books.to_csv(NORMALIZED_BOOKS_CSV)
-    users.to_csv(NORMALIZED_USERS_CSV)
-    ratings.to_csv(NORMALIZED_RATINGS_CSV)
+    books.to_csv(NORMALIZED_BOOKS_CSV, index=False)
+    users.to_csv(NORMALIZED_USERS_CSV, index=False)
+    ratings.to_csv(NORMALIZED_RATINGS_CSV, index=False)
     return books, users, ratings
 
 
@@ -459,7 +458,7 @@ def hot_encode_users(users):
 def get_encoded_books():
     if not exists(ENCODED_BOOKS_CSV):
         raise Exception("Encoded Books does not exist")
-    encoded_books = pd.read_csv(ENCODED_BOOKS_CSV, sep=",", encoding="utf-8")
+    encoded_books = pd.read_csv(ENCODED_BOOKS_CSV, sep=",", encoding="utf-8", index_col=False)
     return encoded_books
 
 
@@ -556,7 +555,7 @@ def recommend_items_rf(norm_books, norm_users, norm_ratings,
 def flatten(l):
     return [item for sublist in l for item in sublist]
 
-# # run random forest prediction
+# run random forest prediction
 # print("Predictions:")
 # norm_books, norm_users, norm_ratings = get_normalized_data()
 # print(recommend_items_rf(norm_books, norm_users, norm_ratings, age=20, locationCountry="USA"))
