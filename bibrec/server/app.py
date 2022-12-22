@@ -273,8 +273,8 @@ class RecommendItemsRF(Resource):
         args = self.args.parse_args()
         app.logger.info(f'RecommendItemsRF run prediction')
         recommendations = recommend_items_rf(rfc, norm_books,norm_users, norm_ratings, args.userId, args.age, args.locationCountry, args.locationState, args.locationCity, args.itemId, args.numberOfItems)
-        app.logger.info('Predictions', recommendations[:args.numberOfItems])
-        json_str = recommendations[:args.numberOfItems].to_json(orient='records')
+        app.logger.info('Predictions', recommendations)
+        json_str = recommendations.to_json(orient='records')
         parsed = json.loads(json_str)
         return parsed
 
