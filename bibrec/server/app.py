@@ -45,7 +45,6 @@ else:
     encoded_users = get_encoded_users()
     rfc = train_model_rf_encoded(encoded_books, encoded_users, norm_ratings)
 
-app.logger.info("Applicaton ready!")
 
 # Register User
 class RegisterUser(Resource):
@@ -298,6 +297,6 @@ def after_request(response):
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
     return response
 
-
 if __name__ == "__main__":
-    app.run(debug=True, use_reloader=False)
+    app.logger.info("Applicaton ready!")
+    app.run(debug=False)

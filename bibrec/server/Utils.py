@@ -527,8 +527,11 @@ def recommend_items_rf(rfc,
                        age, locationCountry, userId=None, locationState=None, locationCity=None, itemId=None,
                        numberOfItems=10):
     # drop unused isbn column
-    norm_books = norm_books.drop(["isbn"], axis=1)
-    norm_ratings = norm_ratings.drop(["isbn"], axis=1)
+    if 'isbn' in norm_books.columns:
+        norm_books = norm_books.drop(["isbn"], axis=1)
+
+    if 'isbn' in norm_ratings.columns:
+        norm_ratings = norm_ratings.drop(["isbn"], axis=1)
 
     # create user input
     logging.info("Running prediction for user:")
