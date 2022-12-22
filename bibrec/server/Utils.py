@@ -551,8 +551,8 @@ def recommend_items_rf(rfc,
     df_user = df_user.filter(regex="age|country_|state_", axis=1)
 
     # TODO: model was not trained with these columns
-    df_user = df_user.drop("state_", axis=1)
-    df_user = df_user.drop("state_n/a", axis=1)
+    #df_user = df_user.drop("state_", axis=1)
+    #df_user = df_user.drop("state_n/a", axis=1)
 
     # hot encode data
     encoded_books = get_encoded_books()
@@ -585,7 +585,10 @@ def flatten(l):
 # run random forest prediction
 # print("Predictions:")
 # norm_books, norm_users, norm_ratings = get_normalized_data()
-# print(recommend_items_rf(norm_books, norm_users, norm_ratings, age=20, locationCountry="USA"))
+# encoded_books = get_encoded_books()
+# encoded_users = get_encoded_users()
+# rfc = train_model_rf_encoded(encoded_books, encoded_users, norm_ratings)
+# print(recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, age=20, locationCountry="USA"))
 
 # run to normalize books and export to file
 # books = get_books()

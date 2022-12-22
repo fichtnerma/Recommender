@@ -298,5 +298,5 @@ def after_request(response):
     return response
 
 if __name__ == "__main__":
-    app.logger.info("Applicaton ready!")
+    app.logger.warn("Applicaton ready!")
     app.run(debug=False)
