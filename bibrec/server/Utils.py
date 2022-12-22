@@ -389,9 +389,9 @@ def remove_books_without_ratings(df, n=3):
 def get_normalized_data(books_path=NORMALIZED_BOOKS_CSV,
                         users_path=NORMALIZED_USERS_CSV,
                         ratings_path=NORMALIZED_RATINGS_CSV):
-    books = pd.read_csv(books_path, sep=",", encoding="utf-8")
-    users = pd.read_csv(users_path, sep=",", encoding="utf-8")
-    ratings = pd.read_csv(ratings_path, sep=",", encoding="utf-8")
+    books = pd.read_csv(books_path, sep=",", encoding="utf-8", na_filter=False)
+    users = pd.read_csv(users_path, sep=",", encoding="utf-8", na_filter=False)
+    ratings = pd.read_csv(ratings_path, sep=",", encoding="utf-8", na_filter=False)
 
     # init global vars and ensure all normalized columns are loaded
     init_top_publisher(books, top_n=1000)
