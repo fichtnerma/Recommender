@@ -525,6 +525,11 @@ def recommend_items_rf(norm_books, norm_users, norm_ratings,
     df_user = hot_encode_users(df_user)
     df_user = df_user.filter(regex="age|country_|state_", axis=1)
 
+    # TODO: model was not trained with these columns
+    df_user = df_user.drop("state_", axis=1)
+    df_user = df_user.drop("state_n/a", axis=1)
+    print(df_user.describe())
+
     # hot encode data
     encoded_books = get_encoded_books()
     df_books = encoded_books.filter(regex="isbn13|normalized_year_of_publication|publisher_", axis=1)
