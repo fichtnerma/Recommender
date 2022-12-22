@@ -23,7 +23,7 @@ NORMALIZED_RATINGS_CSV = '%s/normalized_ratings.csv' % DATA_DIR
 
 ENCODED_BOOKS_CSV = "%s/encoded_books.csv" % DATA_DIR
 
-MODEL_FILE_PKL = "%s/rf6-ex6.pkl" % DATA_DIR
+MODEL_FILE_PKL = "%s/rf-model.pkl" % DATA_DIR
 
 
 def prepare_string(string):
@@ -456,6 +456,12 @@ def hot_encode_users(users):
     users = hot_encode_state(users)
     return users
 
+def get_encoded_books():
+    if not exists(ENCODED_BOOKS_CSV):
+        raise Exception("Encoded Books does not exist")
+    encoded_books = pd.read_csv(ENCODED_BOOKS_CSV, sep=",", encoding="utf-8")
+    return encoded_books
+
 
 def get_model(path):
     if not exists(path):
@@ -496,7 +502,6 @@ def read_object(path):
     with open(path, "rb") as file:
         return pickle.load(file)
 
-
 def recommend_items_rf(norm_books, norm_users, norm_ratings,
                        age, locationCountry, userId=None, locationState=None, locationCity=None, itemId=None,
                        numberOfItems=10):
@@ -522,10 +527,7 @@ def recommend_items_rf(norm_books, norm_users, norm_ratings,
     df_user = df_user.filter(regex="age|country_|state_", axis=1)
 
     # hot encode data
-    if not exists(ENCODED_BOOKS_CSV):
-        raise Exception("Encoded Books does not exist")
-    encoded_books = pd.read_csv(ENCODED_BOOKS_CSV, sep=",", encoding="utf-8")
-
+    encoded_books = get_encoded_books()
     df_books = encoded_books.filter(regex="isbn13|normalized_year_of_publication|publisher_", axis=1)
 
     # combine dataset
