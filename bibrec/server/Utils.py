@@ -1,12 +1,12 @@
 import logging
+import pickle
+from os.path import exists
 
 import numpy as np
 import pandas as pd
-import pickle
-
-from os.path import exists
-from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+
 
 # ENV VARS
 DATA_DIR = "./data"       # for docker
