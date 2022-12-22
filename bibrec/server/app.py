@@ -15,31 +15,31 @@ users_dict = defaultdict(list)
 users_ratings = pd.DataFrame(columns=["user_id", "isbn", "book_rating"])
 
 # get data
-app.logger.info("Reading data")
+app.logger.warn("Reading data")
 books = get_books()
 users = get_users()
 ratings = get_ratings(books)
 
 # get normalized data
-app.logger.info("Reading normalized data")
+app.logger.warn("Reading normalized data")
 norm_books, norm_users, norm_ratings = get_normalized_data()
 
 # todo
-app.logger.info("Read editions")
+app.logger.warn("Read editions")
 bookData = pd.read_csv("./data/editions_dump.csv", sep=",", encoding="utf-8")
 books_with_mean_count = add_book_rating_mean_and_count(books, ratings)
 
 # models
-app.logger.info("ContentBasedFiltering")
+app.logger.warn("ContentBasedFiltering")
 cbf = ContentBasedFiltering(books_with_mean_count, bookData)
 
 # random forest
 if exists(MODEL_FILE_PKL):
     # get model
-    app.logger.info("Loading RF model")
+    app.logger.warn("Loading RF model")
     rfc = get_model(MODEL_FILE_PKL)
 else:
-    app.logger.info("Training lightweight RF model")
+    app.logger.warn("Training lightweight RF model")
     # train model with pre-encoded files
     encoded_books = get_encoded_books()
     encoded_users = get_encoded_users()
