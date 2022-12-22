@@ -596,4 +596,3 @@ def flatten(l):
 # print("top countries", get_top_countries())
 # print("top states", get_top_states())
 # print("top publisher", get_top_publisher())
-
