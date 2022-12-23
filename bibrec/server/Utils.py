@@ -538,8 +538,8 @@ def create_user(user_id, age, city, state, country):
 
 def recommend_items_rf(rfc,
                        norm_books, norm_users, norm_ratings,
-                       age, locationCountry,
-                       userId=None, locationState=None, locationCity=None, itemId=None,
+                       age, country,
+                       user_id=None, state=None, city=None, item_id=None,
                        numberOfItems=10):
 
     # drop unused isbn column
@@ -550,8 +550,7 @@ def recommend_items_rf(rfc,
         norm_ratings = norm_ratings.drop(["isbn"], axis=1)
 
     # create user input
-    df_user = create_user(userId, age, locationCity, locationState, locationCountry)
-    logging.info("Running prediction for user:", df_user)
+    df_user = create_user(user_id, age, city, state, country)
     df_user = normalize_country(df_user)
     df_user = normalize_state(df_user)
     df_user = hot_encode_users(df_user)

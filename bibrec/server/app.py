@@ -133,7 +133,7 @@ class UserRecommendations(Resource):
         args = self.user_rec_args.parse_args()
         app.logger.info(f'UserRecommendations run prediction for ', args.userId)
         user = users[users["user_id"] == args.userId]
-        recommendations = recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, user.userId, user.age, user.country, numberOfItems=args.recommendationCount)
+        recommendations = recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, user_id = user.userId, age = user.age, country = user.country, numberOfItems=args.recommendationCount)
         app.logger.info('Predictions', recommendations)
         json_str = recommendations.to_json(orient='records')
         parsed = json.loads(json_str)
@@ -290,8 +290,12 @@ class RecommendItemsRF(Resource):
     def post(self):
         args = self.args.parse_args()
         app.logger.info(f'RecommendItemsRF run prediction')
-        # recommendations = recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, args.userId, args.age, args.locationCountry, args.locationState, args.locationCity, args.itemId, args.numberOfItems)
-        recommendations = recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, age=20, locationCountry="USA")
+
+        df_user = create_user(args.userId, args.age, args.locationCity, args.locationState, args.locationCountry)
+        logging.info("USER", df_user)
+
+        recommendations = recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, age = args.age, country = args.locationCountry, user_id = args.userId, state = args.locationState, city = args.locationCity, item_id = args.itemId, numberOfItems = args.numberOfItems)
+        recommendations = recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, age=20, country="USA")
         app.logger.info('Predictions', recommendations)
         json_str = recommendations.to_json(orient='records')
         parsed = json.loads(json_str)
