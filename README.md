@@ -9,6 +9,10 @@ Recommending Books à la Netflix.
 make run logs
 ```
 
+Access the Frontend on `http://localhost:3000`.
+
+Access the Backend on `http://localhost:4000`.
+
 __Prerequisites__:
 - Docker Compose
 - Around 13GB of free RAM
@@ -31,6 +35,11 @@ from the books title and its genres.
 - Frontend: React, Material UI
 - Backend: REST API mit Flask
 - Infrastructure: Docker + Compose
+- Algorithms: Random Forest & Content Based Filtering
+
+### Libraries
+- Initial research with the [CaseRecommender](http://caserec.github.io/CaseRecommender/)
+- RS Algorithms used from [Scikit-Learn](https://scikit-learn.org/)
 
 ### Dataset
 As a base the [BookCrossing](http://www2.informatik.uni-freiburg.de/~cziegler/BX/) was used for this project.
@@ -78,3 +87,8 @@ __Strategy for the Evaluation API__:
 - If user data (age, country, and state) and a user ID are given, the user's rated books will be used to find similar books through a content-based filtering approach (such as TF-IDF) and these books will be mixed into the results list from the random forest prediction (hybrid approach).
 - If user data (age, country, and state) and an item ID are given, similar books to the user's rated books will be returned. If no similar books are found, the most popular items will be returned.
 - If user data (age, country, and state), a user ID, and an item ID are given, it is possible that a hybrid approach will be used.
+
+Example Call:
+```sh
+http GET :4000/recommendItemsRF age==20 locationCountry=="usa" numberOfItems=3
+```

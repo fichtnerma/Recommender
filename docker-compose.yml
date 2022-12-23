@@ -8,10 +8,11 @@ services:
     volumes:
       - ./bibrec/server:/api/src
       - ./data:/api/src/data
-    env_file: .env
     environment:
       - FLASK_DEBUG=false
       - FLASK_APP=app.py
+      - RF_ESTIMATORS=50
+      - RF_JOBS=3
       - RF_VERBOSE=10
       # - RF_RANDOM_STATE=1
     expose:
@@ -24,7 +25,7 @@ services:
     build: ./bibrec/client
     command: npm run dev
     volumes:
-      - bibrec/client:/app
+      - ./bibrec/client:/app
     ports:
       - "3000:3000"
     depends_on:
