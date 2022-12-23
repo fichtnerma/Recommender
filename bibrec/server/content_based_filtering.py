@@ -1,7 +1,6 @@
 from flask import current_app as app
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import linear_kernel
-import pickle
 
 from Utils import *
 
