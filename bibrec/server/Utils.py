@@ -491,6 +491,7 @@ def train_model_rf(books, users, ratings):
 
     return train_model_rf_encoded(encoded_books, encoded_users, ratings)
 
+
 def train_model_rf_encoded(encoded_books, encoded_users, ratings):
     # RF Features: Country, State, Age, Year-of-Publication, Publisher
     df_books = encoded_books.filter(regex="isbn13|normalized_year_of_publication|publisher_", axis=1)
@@ -525,10 +526,22 @@ def read_object(path):
     with open(path, "rb") as file:
         return pickle.load(file)
 
+def create_user(user_id, age, city, state, country):
+    user = pd.DataFrame([{
+        'user_id': user_id,
+        'age': age,
+        'city': city,
+        'state': state,
+        'country': country
+    }])
+    return user
+
 def recommend_items_rf(rfc,
                        norm_books, norm_users, norm_ratings,
-                       age, locationCountry, userId=None, locationState=None, locationCity=None, itemId=None,
+                       age, locationCountry,
+                       userId=None, locationState=None, locationCity=None, itemId=None,
                        numberOfItems=10):
+
     # drop unused isbn column
     if 'isbn' in norm_books.columns:
         norm_books = norm_books.drop(["isbn"], axis=1)
@@ -537,24 +550,16 @@ def recommend_items_rf(rfc,
         norm_ratings = norm_ratings.drop(["isbn"], axis=1)
 
     # create user input
-    logging.info("Running prediction for user:")
-    user = pd.DataFrame([{
-        'age': age,
-        'city': locationCity,
-        'state': locationState,
-        'country': locationCountry
-    }])
-    logging.info(user)
-
-    # create users
-    df_user = user
+    df_user = create_user(userId, age, locationCity, locationState, locationCountry)
+    logging.info("Running prediction for user:", df_user)
     df_user = normalize_country(df_user)
     df_user = normalize_state(df_user)
     df_user = hot_encode_users(df_user)
-    df_user = df_user.filter(regex="age|country_|state_", axis=1)
 
-    # hot encode data
+    # prepare books input
     encoded_books = get_encoded_books()
+
+    df_user = df_user.filter(regex="age|country_|state_", axis=1)
     df_books = encoded_books.filter(regex="isbn13|normalized_year_of_publication|publisher_", axis=1)
 
     # combine dataset
@@ -582,7 +587,6 @@ def flatten(l):
     return [item for sublist in l for item in sublist]
 
 # run random forest prediction
-# print("Predictions:")
 # norm_books, norm_users, norm_ratings = get_normalized_data()
 # encoded_books = get_encoded_books()
 # encoded_users = get_encoded_users()
@@ -601,14 +605,3 @@ def flatten(l):
 # print("top countries", get_top_countries())
 # print("top states", get_top_states())
 # print("top publisher", get_top_publisher())
-
-# predict user
-# user = pd.DataFrame([{
-#     'userId': None,
-#     'age': 20,
-#     'city': None,
-#     'state': None,
-#     'country': "usa"
-# }])
-# df_user = user
-# df_user = normalize_country(df_user)
