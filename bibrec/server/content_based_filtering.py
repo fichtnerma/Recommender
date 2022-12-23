@@ -1,6 +1,7 @@
 from flask import current_app as app
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import linear_kernel
+import pickle
 
 from Utils import *
 
@@ -10,9 +11,12 @@ class ContentBasedFiltering:
         self.books = books
         self.CHUNK_QUANTITY = 50
         self.tfidf = TfidfVectorizer(stop_words='english')
-
-        # data cleaning
         self.book_data = pd.DataFrame(book_data).drop_duplicates(subset=["isbn_10"], ignore_index=True)
+        self.calculate_similarities()
+
+
+    def calculate_similarities(self):
+        # data cleaning
         self.book_data.rename(columns={'isbn_10': 'isbn', 'first_sentence.value': 'first_sentence', 'notes.value': 'notes'}, inplace=True)
         self.book_data.isbn = self.book_data.isbn.map(lambda x: str(x).strip()[2:-2])
         self.book_data = self.books.merge(self.book_data, on="isbn", how="inner")
@@ -21,7 +25,6 @@ class ContentBasedFiltering:
         self.book_data.subjects = self.book_data.subjects.map(lambda x: str(x).strip()[2:-2])
         self.book_data.genres = self.book_data.genres.map(lambda x: str(x).strip()[2:-2])
         self.book_data = self.book_data.fillna(" ")
-        # end data cleaning
 
         # add book_info column and append relevant data
         self.book_data["book_info"] = self.book_data["book_title"] + " " + self.book_data["subjects"] + " " + self.book_data["genres"]
