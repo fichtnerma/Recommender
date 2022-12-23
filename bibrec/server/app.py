@@ -57,6 +57,9 @@ else:
     # train model with pre-encoded files
     encoded_books = get_encoded_books()
     encoded_users = get_encoded_users()
+    # encode from scratch
+    # encoded_books = hot_encode_books(norm_books)
+    encoded_users = hot_encode_users(norm_users)
     rfc = train_model_rf_encoded(encoded_books, encoded_users, norm_ratings)
     # save file
     # dump_object(MODEL_FILE_PKL, rfc)
@@ -270,11 +273,13 @@ class RecommendItems(Resource):
         user_id = args["userId"]
         age = args["age"]
         country = args["locationCountry"]
+        state = args["locationState"]
         item_count = args["numberOfItems"]
         isbn13 = str(convert_isbn(args["itemId"]))
         # state and city are not used for recommendations
 
         if user_id and isbn:
+            app.logger.info("RANDOM FOREST + CONTENT BASED")
             # return a mix of random forest recommendations and content based recommendations
 
             # the mix uses 30% similar books and 70% recommendations from the RF
@@ -284,25 +289,33 @@ class RecommendItems(Resource):
             user = norm_users[norm_users["user_id"] == args["userId"]].iloc[0]
             age = user.age
             country = user.country
+            state = user.state
+
             similar_books = get_similar_books(cbf, books_with_mean_count, ratings, users_ratings, user_id, isbn, isbn13, similar_books_ratio)
 
-            rf_books = recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, user_id=user_id, age=age, country=country,
+            rf_books = recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, user_id=user_id,
+                                          age=age, country=country, state=state,
                                           numberOfItems=rf_books_ratio)
 
             items = pd.concat([rf_books, similar_books])
         elif isbn:
+            app.logger.info("CONTENT BASED")
             # return item ids from content based filtering
             items = get_similar_books(cbf, books_with_mean_count, ratings, users_ratings, user_id, isbn, isbn13, item_count)
+
         else:
             # return item ids from random forest recommendations
 
+            app.logger.info("RANDOM FOREST")
             if user_id:
                 # get user info from users data set and ignore passed age and country if user_id is passed
                 user = norm_users[norm_users["user_id"] == args["userId"]].iloc[0]
                 age = user.age
                 country = user.country
+                state = user.state
 
-            items = recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, user_id=user_id, age=age, country=country,
+            items = recommend_items_rf(rfc, norm_books, norm_users, norm_ratings,
+                                       user_id=user_id, age=age, country=country, state=state,
                                        numberOfItems=item_count)
 
         items_list_json = items["isbn"].to_json(force_ascii=False, orient='records')
