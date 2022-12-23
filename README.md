@@ -9,7 +9,7 @@ make run logs
 ```
 
 ## Documentation
-This project is a recommendation system for books. 
+This project is a recommendation system for books.
 Users can rate a book form a scale of 1-10 stars.
 Based on the information the user provides on login, the system recommends books the user might like.
 When viewing a book, similar books are recommended as well.
@@ -55,6 +55,7 @@ __Summary__:
 
 ### Baseline Comparison & Evaluation
 - [Baseline Most Popular](baseline.ipynb): Showcase of the Baseline using the Best Rated Books Algorithm
+- [Baseline CaseRecommender](baseline_case_recommender.ipynb): Showcase of the Baseline using the CaseRecommender Library
 - [Random Forest Model](rf-model.ipynb): Evaluation of Random Forest Algorithm
 - [Content Based Filtering](cb-showcase.ipynb): Showcase Content Based Filtering
 
