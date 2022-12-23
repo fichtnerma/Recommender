@@ -35,7 +35,7 @@ export default function Home({ user }: HomeProps) {
 
 			const timezoneCountry = getTimezoneCountry();
 
-			axios.post("http://localhost:4000/topInCountry", {
+			!topInCountry.length && axios.post("http://localhost:4000/topInCountry", {
 				userId: user?.user_id,
 				recommendationCount: 20,
 				timezoneCountry
@@ -43,7 +43,7 @@ export default function Home({ user }: HomeProps) {
 				setTopInCountry(res.data);
 			});
 
-			axios.post("http://localhost:4000/browse")
+			!browseBooks.length && axios.post("http://localhost:4000/browse")
 				.then((res) => {
 					setBrowseBooks(res.data);
 				});

@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import pickle
@@ -5,6 +6,7 @@ from os.path import exists
 
 import numpy as np
 import pandas as pd
+from flask import current_app
 from sklearn.ensemble import RandomForestClassifier
 
 # ENV VARS
@@ -606,6 +608,7 @@ def recommend_items_rf(rfc,
 def flatten(l):
     return [item for sublist in l for item in sublist]
 
+
 # run random forest prediction
 # norm_books, norm_users, norm_ratings = get_normalized_data()
 # encoded_books = get_encoded_books()
@@ -626,3 +629,33 @@ def flatten(l):
 # print("top countries", get_top_countries())
 # print("top states", get_top_states())
 # print("top publisher", get_top_publisher())
+
+def get_similar_books(cbf, books_with_mean_count, ratings, users_ratings, user_id, isbn, isbn13, number_of_items):
+    # double the number of items to make sure that always the desired amount of items is returned even if all first n books are already rated
+    similar_books = cbf.recommend_tf_idf(isbn13, number_of_items * 2)
+
+    # return sample of most popular if no similar items are found
+    if similar_books is None:
+        current_app.logger.info(f'No similar books found. Returning {number_of_items} most popular')
+        most_rated = get_most_rated_books(books_with_mean_count, 50)
+        mask = most_rated["isbn"] != isbn
+        most_rated = most_rated[mask]
+        most_rated = most_rated.sort_values('rating_mean', ascending=False)
+        json_str = most_rated.sample(n=number_of_items).to_json(orient='records')
+        parsed = json.loads(json_str)
+        return parsed
+
+    # filter sent book out of the similar items if present
+    mask = similar_books["isbn"] != isbn
+    similar_books = similar_books[mask]
+
+    merged_ratings = pd.concat([ratings, users_ratings])
+
+    # filter already rated books from the user
+    if user_id is not None:
+        users_ratings = merged_ratings[merged_ratings["user_id"] == user_id]
+        rated_book_ids = users_ratings['isbn'].tolist()
+
+        similar_books = similar_books[~similar_books['isbn'].isin(rated_book_ids)]
+
+    return similar_books[:number_of_items]

@@ -1,7 +1,7 @@
-import json
 import random
 from collections import defaultdict
 
+import pandas as pd
 from flask import Flask
 from flask_restful import Api, Resource, reqparse
 
@@ -95,15 +95,12 @@ class RegisterUser(Resource):
 
                 user_info["user_id"] = uid
 
-                app.logger.info(user_info)
-                app.logger.info(users_dict)
                 app.logger.info(f'User „{user_info["username"]}“ logged in')
                 return user_info
 
         # add a new user
         user_id = random.getrandbits(32)
         user_info = args.copy()
-        app.logger.info(user_info)
         users_dict[user_id] = user_info
         args["user_id"] = user_id
 
@@ -154,8 +151,6 @@ class UserRecommendations(Resource):
         user_id = args["userId"]
         user = users_dict.get(user_id)
         if user is not None:
-            # user = users_dict[user_id]
-            app.logger.info("--------- USER -----------", user)
             age = user["age"]
             country = user["country"]
         elif len(norm_users[norm_users["user_id"] == args["userId"]]) == 1:
@@ -169,7 +164,6 @@ class UserRecommendations(Resource):
             user_mean = users_ratings["book_rating"].mean()
             norm_user_ratings = users_ratings
             norm_user_ratings["normalized_ratings"] = users_ratings["book_rating"] - user_mean
-            app.logger.info(norm_user_ratings)
             norm_ratings = pd.concat([norm_ratings, norm_user_ratings])
 
         recommendations = recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, user_id=user_id, age=age, country=country,
@@ -237,7 +231,7 @@ class Browse(Resource):
 # Get similar items
 class SimilarBooks(Resource):
     similar_Books_args = reqparse.RequestParser()
-    similar_Books_args.add_argument("isbn10", type=str, help="The ISBN of the book for which similar books should be found", required=True)
+    similar_Books_args.add_argument("isbn10", type=str, help="The ISBN of the book for which similar books should exist", required=True)
     similar_Books_args.add_argument("userId", type=int, help="The id of the current user", default=0)
     similar_Books_args.add_argument("recommendationCount", type=int, help="The amount of recommendations", default=5)
 
@@ -245,35 +239,11 @@ class SimilarBooks(Resource):
         global users_ratings
         args = self.similar_Books_args.parse_args()
         user_id = args["userId"]
+        isbn = args["isbn10"]
+        number_of_items = args["recommendationCount"]
         isbn13 = str(convert_isbn(args["isbn10"]))
-        # double the number of items to make sure that always the desired amount of items is returned even if all first n books are already rated
-        similar_books = cbf.recommend_tf_idf(isbn13, args["recommendationCount"] * 2)
 
-        # return sample of most popular if no similar items are found
-        if similar_books is None:
-            app.logger.info(f'No similar books found. Returning {args["recommendationCount"]} most popular')
-            most_rated = get_most_rated_books(books_with_mean_count, 50)
-            mask = most_rated["isbn"] != args["isbn10"]
-            most_rated = most_rated[mask]
-            most_rated = most_rated.sort_values('rating_mean', ascending=False)
-            json_str = most_rated.sample(n=args["recommendationCount"]).to_json(orient='records')
-            parsed = json.loads(json_str)
-            return parsed
-
-        # filter sent book out of the similar items if present
-        mask = similar_books["isbn"] != args["isbn10"]
-        similar_books = similar_books[mask]
-
-        merged_ratings = pd.concat([ratings, users_ratings])
-
-        # filter already rated books from the user
-        if user_id is not None:
-            users_ratings = merged_ratings[merged_ratings["user_id"] == user_id]
-            rated_book_ids = users_ratings['isbn'].tolist()
-
-            similar_books = similar_books[~similar_books['isbn'].isin(rated_book_ids)]
-
-        similar_books = similar_books[:args["recommendationCount"]]
+        similar_books = get_similar_books(cbf, books_with_mean_count, ratings, users_ratings, user_id, isbn, isbn13, number_of_items)
 
         app.logger.info("Sent isbn: " + args["isbn10"])
         app.logger.info("Similar books for isbn: " + isbn13 + " are:")
@@ -283,7 +253,7 @@ class SimilarBooks(Resource):
         return json.loads(parsed)
 
 
-# Get recommend items
+# Evaluation API
 class RecommendItems(Resource):
     rec_items_args = reqparse.RequestParser()
     rec_items_args.add_argument("userId", type=int, help="The id of the current user", location="args")
@@ -297,68 +267,46 @@ class RecommendItems(Resource):
     def get(self):
         args = self.rec_items_args.parse_args()
         isbn = args["itemId"]
-        userId = args["userId"]
+        user_id = args["userId"]
         age = args["age"]
         country = args["locationCountry"]
-        state = args["locationState"]
-        city = args["locationCity"]
-        nItems = args["numberOfItems"]
+        item_count = args["numberOfItems"]
         isbn13 = str(convert_isbn(args["itemId"]))
-        cbf_recommendations = []
-        rf_recommendations = []
+        # state and city are not used for recommendations
 
-        if isbn:
-            cbf_recommendations.append(cbf.recommend_tf_idf(isbn13, nItems))
-        if userId:
-            rated_books = ratings[ratings["user_id"] == userId]["isbn13"].tolist()
-            for book in rated_books:
-                cbf_recommendations.append(cbf.recommend_tf_idf(book, 3))
+        if user_id and isbn:
+            # return a mix of random forest recommendations and content based recommendations
 
-        if age and country:
-            user = create_user(userId, age=age, country=args.locationCountry)
-            recommendations = recommend_items_rf(rfc, norm_books, norm_users, norm_ratings,
-                                                 age=args.age, country=args.locationCountry, user_id=args.userId,
-                                                 state=args.locationState, city=args.locationCity,
-                                                 # item_id = args.itemId,
-                                                 numberOfItems=args.numberOfItems)
+            # the mix uses 30% similar books and 70% recommendations from the RF
+            similar_books_ratio = round(0.3 * item_count)
+            rf_books_ratio = round(0.7 * item_count)
 
-            rf_recommendations = rf_recommendations.concat([rf_recommendations, cbf.recommend_tf_idf(isbn13, nItems)])
+            user = norm_users[norm_users["user_id"] == args["userId"]].iloc[0]
+            age = user.age
+            country = user.country
+            similar_books = get_similar_books(cbf, books_with_mean_count, ratings, users_ratings, user_id, isbn, isbn13, similar_books_ratio)
 
-        rec_cbf = []
-        for book in cbf_recommendations:
-            rec_cbf.append(book["isbn13"].tolist())
-        rec_cbf = list(dict.fromkeys(flatten(rec_cbf)))
-        app.logger.info("Recommendations for user: ")
-        app.logger.info(rec_cbf)
+            rf_books = recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, user_id=user_id, age=age, country=country,
+                                          numberOfItems=rf_books_ratio)
 
-        # TODO: parse to string array
-        json_str = books_with_mean_count.sample(n=args["numberOfItems"]).to_json(orient='records')
-        parsed = json.loads(json_str)
+            items = pd.concat([rf_books, similar_books])
+        elif isbn:
+            # return item ids from content based filtering
+            items = get_similar_books(cbf, books_with_mean_count, ratings, users_ratings, user_id, isbn, isbn13, item_count)
+        else:
+            # return item ids from random forest recommendations
 
-        return parsed
+            if user_id:
+                # get user info from users data set and ignore passed age and country if user_id is passed
+                user = norm_users[norm_users["user_id"] == args["userId"]].iloc[0]
+                age = user.age
+                country = user.country
 
+            items = recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, user_id=user_id, age=age, country=country,
+                                       numberOfItems=item_count)
 
-# Evaluation API
-class RecommendItemsRF(Resource):
-    args = reqparse.RequestParser()
-    args.add_argument("userId", type=int, help="The id of the current user", location="args")
-    args.add_argument("age", type=int, help="The age of the user", required=True, location="args")
-    args.add_argument("locationCountry", type=str, help="The Country of the user", required=True, location="args")
-    args.add_argument("locationState", type=str, help="The State of the user", location="args")
-    args.add_argument("locationCity", type=str, help="The City of the user", location="args")
-    args.add_argument("itemId", type=int, help="The ID of the book (isbn10)", location="args")
-    args.add_argument("numberOfItems", type=int, help="Number of recommendations to provide", default=10, location="args")
-
-    def get(self):
-        args = self.args.parse_args()
-        app.logger.info(f'RecommendItemsRF run prediction')
-        df_user = create_user(args.userId, args.age, args.locationCity, args.locationState, args.locationCountry)
-        logging.info("USER", df_user)
-        recommendations = recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, age=args.age, country=args.locationCountry, user_id=args.userId, state=args.locationState,
-                                             city=args.locationCity, item_id=args.itemId, numberOfItems=args.numberOfItems)
-        app.logger.info('Predictions', recommendations)
-        json_str = recommendations.to_json(orient='records')
-        parsed = json.loads(json_str)
+        items_list_json = items["isbn"].to_json(force_ascii=False, orient='records')
+        parsed = json.loads(items_list_json)
         return parsed
 
 
@@ -378,8 +326,7 @@ api.add_resource(TopInCountry, "/topInCountry")
 api.add_resource(Browse, "/browse")
 api.add_resource(SimilarBooks, "/similarBooks")
 api.add_resource(RecommendItems, "/recommendItems")
-api.add_resource(RecommendItemsRF, "/recommendItemsRF")
 
 if __name__ == "__main__":
-    app.logger.warn("Applicaton ready!")
+    app.logger.warn("Application ready!")
     app.run(debug=False)

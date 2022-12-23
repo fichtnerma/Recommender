@@ -49,6 +49,7 @@ class ContentBasedFiltering:
         self.book_data["book_info"] = self.book_data["book_info"].apply(lambda x: x.replace("'", ''))
         self.book_data["book_info"] = self.book_data["book_info"].apply(lambda x: x.replace("--", ''))
         self.book_data["book_info"] = self.book_data["book_info"].apply(lambda x: x.replace("  ", ' '))
+        # filter duplicate words
         self.book_data["book_info"] = self.book_data["book_info"].apply(lambda x: ' '.join(list(set(x.split()))))
 
     def get_similarity_matrix(self, book_data):
