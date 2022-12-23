@@ -397,11 +397,11 @@ def get_normalized_data(books_path=NORMALIZED_BOOKS_CSV,
     users = pd.read_csv(users_path, sep=",", encoding="utf-8", na_filter=False)
     ratings = pd.read_csv(ratings_path, sep=",", encoding="utf-8", na_filter=False)
 
-    if 'isbn' in books.columns:
-        books = books.drop(["isbn"], axis=1)
+    # if 'isbn' in books.columns:
+    #     books = books.drop(["isbn"], axis=1)
 
-    if 'isbn' in ratings.columns:
-        ratings = ratings.drop(["isbn"], axis=1)
+    # if 'isbn' in ratings.columns:
+    #     ratings = ratings.drop(["isbn"], axis=1)
 
     # init global vars and ensure all normalized columns are loaded
     init_top_publisher(books, top_n=1000)
@@ -555,12 +555,12 @@ def recommend_items_rf(rfc,
                        user_id=None, state=None, city=None, item_id=None,
                        numberOfItems=10):
 
-    # drop unused isbn column
-    if 'isbn' in norm_books.columns:
-        norm_books = norm_books.drop(["isbn"], axis=1)
 
-    if 'isbn' in norm_ratings.columns:
-        norm_ratings = norm_ratings.drop(["isbn"], axis=1)
+    # drop unused isbn column
+    # if 'isbn' in norm_books.columns:
+    #     norm_books = norm_books.drop(["isbn"], axis=1)
+    # if 'isbn' in norm_ratings.columns:
+    #     norm_ratings = norm_ratings.drop(["isbn"], axis=1)
 
     # create user input
     df_user = create_user(user_id, age, city, state, country)

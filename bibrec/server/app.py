@@ -130,7 +130,6 @@ class Ratings(Resource):
 
         return f'Book with isbn {args["isbn10"]} rated successfully as {args["rating"]}', 200
 
-
 # Get recommendations of a user
 class UserRecommendations(Resource):
     user_rec_args = reqparse.RequestParser()
