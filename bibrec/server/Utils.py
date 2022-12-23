@@ -539,6 +539,7 @@ def read_object(path):
     with open(path, "rb") as file:
         return pickle.load(file)
 
+
 def create_user(user_id, age=None, city=None, state=None, country=None):
     user = pd.DataFrame([{
         'user_id': user_id,
@@ -555,7 +556,6 @@ def recommend_items_rf(rfc,
                        age, country,
                        user_id=None, state=None, city=None, item_id=None,
                        numberOfItems=10):
-
     # drop unused isbn column
     # if 'isbn' in norm_books.columns:
     #     norm_books = norm_books.drop(["isbn"], axis=1)
@@ -571,11 +571,13 @@ def recommend_items_rf(rfc,
     # prepare books input
     encoded_books = get_encoded_books()
 
-    # TODO: fix filtering out already rated books
-    # if user_id is not None:
-    #     users_ratings = norm_ratings[norm_ratings["user_id"] == user_id]
-    #     unknown_books = encoded_books[~encoded_books.isbn13.isin(users_ratings.isbn13)]
-    #     encoded_books = unknown_books
+    if user_id is not None:
+        users_ratings = norm_ratings[norm_ratings["user_id"] == user_id]
+        rated_book_ids = users_ratings['isbn13'].tolist()
+
+        # filter already rated books from the user
+        filtered = encoded_books[~encoded_books['isbn13'].isin(rated_book_ids)]
+        encoded_books = filtered
 
     df_user = df_user.filter(regex="age|country_|state_", axis=1)
     df_books = encoded_books.filter(regex="isbn13|normalized_year_of_publication|publisher_", axis=1)

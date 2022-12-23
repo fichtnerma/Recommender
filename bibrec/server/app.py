@@ -23,10 +23,10 @@ app.logger.info("INITIALIZING")
 
 users_dict = defaultdict(list)
 users_ratings = pd.DataFrame(columns=["user_id", "isbn", "book_rating"])
-books = []
-users = []
-ratings = []
-books_with_mean_count = []
+# books = []
+# users = []
+# ratings = []
+# books_with_mean_count = []
 
 # get data
 app.logger.info("Reading data")
@@ -79,7 +79,6 @@ class RegisterUser(Resource):
         state = args["state"]
         city = args["city"]
         age = args["age"]
-
 
         # check if user already exist
         for uid, user_info in users_dict.items():
@@ -148,6 +147,7 @@ class UserRecommendations(Resource):
     user_rec_args.add_argument("recommendationCount", type=int, help="The amount of recommendations", default=25)
 
     def post(self):
+        global norm_ratings
         args = self.user_rec_args.parse_args()
         app.logger.info(f'UserRecommendations run prediction for {args["userId"]}')
 
@@ -158,12 +158,20 @@ class UserRecommendations(Resource):
             app.logger.info("--------- USER -----------", user)
             age = user["age"]
             country = user["country"]
-        elif norm_users[norm_users["user_id"] == args["userId"]]:
+        elif len(norm_users[norm_users["user_id"] == args["userId"]]) == 1:
             user = norm_users[norm_users["user_id"] == args["userId"]].iloc[0]
             age = user.age
             country = user.country
         else:
             raise Exception("No user with the specified id found!")
+
+        if len(users_ratings) > 0:
+            user_mean = users_ratings["book_rating"].mean()
+            norm_user_ratings = users_ratings
+            norm_user_ratings["normalized_ratings"] = users_ratings["book_rating"] - user_mean
+            app.logger.info(norm_user_ratings)
+            norm_ratings = pd.concat([norm_ratings, norm_user_ratings])
+
         recommendations = recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, user_id=user_id, age=age, country=country,
                                              numberOfItems=args.recommendationCount)
         app.logger.info('Predictions', recommendations)
@@ -234,9 +242,12 @@ class SimilarBooks(Resource):
     similar_Books_args.add_argument("recommendationCount", type=int, help="The amount of recommendations", default=5)
 
     def post(self):
+        global users_ratings
         args = self.similar_Books_args.parse_args()
+        user_id = args["userId"]
         isbn13 = str(convert_isbn(args["isbn10"]))
-        similar_books = cbf.recommend_tf_idf(isbn13, args["recommendationCount"] + 1)
+        # double the number of items to make sure that always the desired amount of items is returned even if all first n books are already rated
+        similar_books = cbf.recommend_tf_idf(isbn13, args["recommendationCount"] * 2)
 
         # return sample of most popular if no similar items are found
         if similar_books is None:
@@ -252,6 +263,16 @@ class SimilarBooks(Resource):
         # filter sent book out of the similar items if present
         mask = similar_books["isbn"] != args["isbn10"]
         similar_books = similar_books[mask]
+
+        merged_ratings = pd.concat([ratings, users_ratings])
+
+        # filter already rated books from the user
+        if user_id is not None:
+            users_ratings = merged_ratings[merged_ratings["user_id"] == user_id]
+            rated_book_ids = users_ratings['isbn'].tolist()
+
+            similar_books = similar_books[~similar_books['isbn'].isin(rated_book_ids)]
+
         similar_books = similar_books[:args["recommendationCount"]]
 
         app.logger.info("Sent isbn: " + args["isbn10"])
