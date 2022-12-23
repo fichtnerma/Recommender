@@ -23,10 +23,10 @@ app.logger.info("INITIALIZING")
 
 users_dict = defaultdict(list)
 users_ratings = pd.DataFrame(columns=["user_id", "isbn", "book_rating"])
-# books = []
-# users = []
-# ratings = []
-# books_with_mean_count = []
+books = []
+users = []
+ratings = []
+books_with_mean_count = []
 
 # get data
 app.logger.info("Reading data")
