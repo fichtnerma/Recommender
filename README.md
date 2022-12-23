@@ -61,8 +61,9 @@ __Summary__:
 ### Baseline Comparison & Evaluation
 - [Baseline Most Popular](baseline.ipynb): Showcase of the Baseline using the Best Rated Books Algorithm
 - [Baseline CaseRecommender](baseline_case_recommender.ipynb): Showcase of the Baseline using the CaseRecommender Library
-- [Random Forest Model](rf-model.ipynb): Evaluation of Random Forest Algorithm
-- [Content Based Filtering](cb-showcase.ipynb): Showcase Content Based Filtering
+- [Random Forest Model](notebooks/rf-model-50.ipynb): Evaluation of Random Forest Algorithm
+- [Random Forest Model 50](notebooks/rf-model-50.ipynb): Evaluation of Random Forest Algorithm using 50 Decision Trees
+- [Content Based Filtering](contentBasedFiltering.ipynb): Showcase Content Based Filtering
 
 ### Scripts
 These utility scripts were used for testing
