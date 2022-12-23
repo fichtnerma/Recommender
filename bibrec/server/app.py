@@ -10,41 +10,51 @@ from content_based_filtering import ContentBasedFiltering
 
 app = Flask(__name__)
 api = Api(app)
+app.logger.setLevel(logging.INFO)
+
+app.logger.info("INITIALIZING")
 
 users_dict = defaultdict(list)
 users_ratings = pd.DataFrame(columns=["user_id", "isbn", "book_rating"])
+books = []
+users = []
+ratings = []
+books_with_mean_count = []
 
 # get data
-app.logger.warn("Reading data")
+app.logger.info("Reading data")
 books = get_books()
 users = get_users()
 ratings = get_ratings(books)
 
 # get normalized data
-app.logger.warn("Reading normalized data")
+app.logger.info("Reading normalized data")
 norm_books, norm_users, norm_ratings = get_normalized_data()
 
 # todo
-app.logger.warn("Read editions")
+app.logger.info("Read editions")
 bookData = pd.read_csv("./data/editions_dump.csv", sep=",", encoding="utf-8")
 books_with_mean_count = add_book_rating_mean_and_count(books, ratings)
 
 # models
-app.logger.warn("ContentBasedFiltering")
+app.logger.info("ContentBasedFiltering")
 cbf = ContentBasedFiltering(books_with_mean_count, bookData)
 
 # random forest
 if exists(MODEL_FILE_PKL):
     # get model
-    app.logger.warn("Loading RF model")
+    app.logger.info("Loading RF model")
     rfc = get_model(MODEL_FILE_PKL)
 else:
-    app.logger.warn("Training lightweight RF model")
+    app.logger.info("Training lightweight RF model")
     # train model with pre-encoded files
     encoded_books = get_encoded_books()
     encoded_users = get_encoded_users()
     rfc = train_model_rf_encoded(encoded_books, encoded_users, norm_ratings)
+    # save file
+    # dump_object(MODEL_FILE_PKL, rfc)
 
+app.logger.info("INITIALIZING DONE")
 
 # Register User
 class RegisterUser(Resource):
@@ -161,13 +171,21 @@ class TopInCountry(Resource):
 
 # Get a mix of most popular and least popular items
 class Browse(Resource):
-    most_rated = get_most_rated_books(books_with_mean_count, 125)
-    most_rated = most_rated.sort_values('rating_mean', ascending=False)
-    most_rated = most_rated[:80]
+    most_rated = None
+    least_rated = None
 
-    least_rated = get_least_rated_books(books_with_mean_count, 200)
+    def init(self):
+        if self.most_rated is not None:
+            return
+        if self.least_rated is not None:
+            return
+        self.most_rated = get_most_rated_books(books_with_mean_count, 125)
+        self.most_rated = self.most_rated.sort_values('rating_mean', ascending=False)
+        self.most_rated = self.most_rated[:80]
+        self.least_rated = get_least_rated_books(books_with_mean_count, 200)
 
     def post(self):
+        self.init()
         least_rated_sample = self.least_rated.sample(n=20)
         combined_books = pd.concat([self.most_rated, least_rated_sample])
         shuffled_books = combined_books.sample(n=100)
@@ -272,12 +290,20 @@ class RecommendItemsRF(Resource):
     def post(self):
         args = self.args.parse_args()
         app.logger.info(f'RecommendItemsRF run prediction')
-        recommendations = recommend_items_rf(rfc, norm_books,norm_users, norm_ratings, args.userId, args.age, args.locationCountry, args.locationState, args.locationCity, args.itemId, args.numberOfItems)
+        # recommendations = recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, args.userId, args.age, args.locationCountry, args.locationState, args.locationCity, args.itemId, args.numberOfItems)
+        recommendations = recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, age=20, locationCountry="USA")
         app.logger.info('Predictions', recommendations)
         json_str = recommendations.to_json(orient='records')
         parsed = json.loads(json_str)
         return parsed
 
+
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
+    return response
 
 # Frontend APIs
 api.add_resource(RegisterUser, "/registerUser")
@@ -288,14 +314,6 @@ api.add_resource(Browse, "/browse")
 api.add_resource(SimilarBooks, "/similarBooks")
 api.add_resource(RecommendItems, "/recommendItems")
 api.add_resource(RecommendItemsRF, "/recommendItemsRF")
-
-
-@app.after_request
-def after_request(response):
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
-    return response
 
 if __name__ == "__main__":
     app.logger.warn("Applicaton ready!")
