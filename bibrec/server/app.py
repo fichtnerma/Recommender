@@ -287,13 +287,13 @@ class RecommendItems(Resource):
 # Evaluation API
 class RecommendItemsRF(Resource):
     args = reqparse.RequestParser()
-    args.add_argument("userId", type=int, help="The id of the current user")
-    args.add_argument("age", type=int, help="The age of the user", required=True)
-    args.add_argument("locationCountry", type=str, help="The Country of the user", required=True)
-    args.add_argument("locationState", type=str, help="The State of the user")
-    args.add_argument("locationCity", type=str, help="The City of the user")
-    args.add_argument("itemId", type=int, help="The ID of the book (isbn10)")
-    args.add_argument("numberOfItems", type=int, help="Number of recommendations to provide", default=10)
+    args.add_argument("userId", type=int, help="The id of the current user", location="args")
+    args.add_argument("age", type=int, help="The age of the user", required=True, location="args")
+    args.add_argument("locationCountry", type=str, help="The Country of the user", required=True, location="args")
+    args.add_argument("locationState", type=str, help="The State of the user", location="args")
+    args.add_argument("locationCity", type=str, help="The City of the user", location="args")
+    args.add_argument("itemId", type=int, help="The ID of the book (isbn10)", location="args")
+    args.add_argument("numberOfItems", type=int, help="Number of recommendations to provide", default=10, location="args")
 
     def get(self):
         args = self.args.parse_args()
