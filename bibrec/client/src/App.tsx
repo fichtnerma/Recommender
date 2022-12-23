@@ -7,7 +7,7 @@ import Modal from "./components/Login/Modal";
 export type User = UserIdentifiers & UserInfo
 
 interface UserIdentifiers {
-	id: number;
+	user_id: number;
 	username: string;
 }
 
@@ -23,7 +23,7 @@ export default function App() {
 	const [modalVisible, setModalVisible] = useState(false);
 
 	useEffect(() => {
-		const userId = sessionStorage.getItem("userId");
+		const userId = sessionStorage.getItem("user_id");
 		const username = sessionStorage.getItem("username");
 		const country = sessionStorage.getItem("country");
 		const state = sessionStorage.getItem("state");
@@ -35,7 +35,7 @@ export default function App() {
 		if (userId && username) {
 			setUser({
 				username,
-				id: +userId,
+				user_id: +userId,
 				age: Number(age) || undefined,
 				city: city ?? undefined,
 				country: country ?? undefined,
@@ -49,7 +49,7 @@ export default function App() {
 	return (
 		<div className="App">
 			<Header setVisible={setModalVisible} user={user} setUser={setUser}/>
-			{modalVisible ? <Modal setVisible={setModalVisible} setUser={setUser}/> : null}
+			{modalVisible ? <Modal setVisible={setModalVisible} setUser={setUser} user={user}/> : null}
 			<Home user={user}/>
 		</div>
 	);

@@ -13,6 +13,7 @@ interface HomeProps {
 
 export default function Home({ user }: HomeProps) {
 	const [userRecommendations, setUserRecommendations] = useState<Book[]>([]);
+	const [isUserRecError, setIsUserRecError] = useState<boolean>(false);
 	const [topInCountry, setTopInCountry] = useState<Book[]>([]);
 	const [browseBooks, setBrowseBooks] = useState<Book[]>([]);
 	const [userRatings, setUserRatings] = useState<Rating[]>([]);
@@ -24,25 +25,18 @@ export default function Home({ user }: HomeProps) {
 	useEffect(() => {
 		try {
 			if (user) {
-				if (!user.country || !user.age) {
-					axios.post("http://localhost:4000/userRecommendations", {
-						userId: user?.id,
-						recommendationCount: 20
-					}).then((res) => {
-						setUserRecommendations(res.data);
-					});
-				}
-
-				axios.get("http://localhost:4000/ratings", { params: { userId: user?.id } })
+				axios.get("http://localhost:4000/ratings", { params: { userId: user?.user_id } })
 					.then((res) => {
 						setUserRatings(res.data);
 					});
+
+				user.age && user.country && getUserRecommendations();
 			}
 
 			const timezoneCountry = getTimezoneCountry();
 
 			axios.post("http://localhost:4000/topInCountry", {
-				userId: user?.id,
+				userId: user?.user_id,
 				recommendationCount: 20,
 				timezoneCountry
 			}).then((res) => {
@@ -59,6 +53,20 @@ export default function Home({ user }: HomeProps) {
 			console.error(e);
 		}
 	}, [user]);
+
+	useEffect(() => {
+		userRatings.length >= 5 && !userRecommendations.length && getUserRecommendations();
+	}, [userRatings]);
+
+	function getUserRecommendations() {
+		return axios.post("http://localhost:4000/userRecommendations", {
+			userId: user?.user_id,
+			recommendationCount: 20
+		}).then((res) => {
+			setIsUserRecError(false);
+			setUserRecommendations(res.data);
+		}).catch(() => setIsUserRecError(true));
+	}
 
 	function onItemClick(book: Book) {
 		setModalVisible(true);
@@ -78,7 +86,7 @@ export default function Home({ user }: HomeProps) {
 				/>
 			) : null}
 
-			{user && user.country && user.age && userRatings.length >= 5 ?
+			{user && !isUserRecError && (userRatings.length >= 5 || (user.country && user.age)) ?
 				<BooksBlock title={"Deine Empfehlungen"} items={userRecommendations} onItemClick={onItemClick}/> : null}
 
 			<BooksBlock title={"Top Bücher in deinem Land"} items={topInCountry} onItemClick={onItemClick}/>

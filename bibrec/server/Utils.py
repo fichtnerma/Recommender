@@ -1,16 +1,14 @@
 import logging
-import pickle
 import os
+import pickle
 from os.path import exists
 
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-
 
 # ENV VARS
-DATA_DIR = "./data"       # for docker
+DATA_DIR = "./data"  # for docker
 # DATA_DIR = "../../data"   # for local testing
 BOOKS_CSV = "%s/BX-Books.csv" % DATA_DIR
 USERS_CSV = "%s/BX-Users.csv" % DATA_DIR
@@ -22,12 +20,12 @@ ENCODED_BOOKS_CSV = "%s/encoded_books.csv" % DATA_DIR
 ENCODED_USERS_CSV = "%s/encoded_users.csv" % DATA_DIR
 MODEL_FILE_PKL = "%s/rf-model.pkl" % DATA_DIR
 
-
 # Env vars
 n_estimators = int(os.environ.get("RF_ESTIMATORS", 100))
 n_jobs = int(os.environ.get("RF_JOBS", 3))
 random_state = os.environ.get("RF_RANDOM_STATE", None)
 verbose = int(os.environ.get("RF_VERBOSE", 10))
+
 
 def prepare_string(string):
     return str(string).strip().lower().replace('-', '_')
@@ -428,7 +426,6 @@ def normalize_data(books, users, ratings):
     return books, users, ratings
 
 
-
 def export_normalized_data(norm_books, norm_users, norm_ratings):
     logging.info("saving normalized data")
     norm_books.to_csv(NORMALIZED_BOOKS_CSV, index=False)
@@ -467,17 +464,20 @@ def hot_encode_users(users):
     users = hot_encode_state(users)
     return users
 
+
 def get_encoded_books(path=ENCODED_BOOKS_CSV):
     if not exists(path):
         raise Exception("Encoded Books does not exist", path)
     encoded_books = pd.read_csv(path, sep=",", encoding="utf-8", index_col=False)
     return encoded_books
 
+
 def get_encoded_users(path=ENCODED_USERS_CSV):
     if not exists(path):
         raise Exception("Encoded Users does not exist", path)
     encoded_users = pd.read_csv(path, sep=",", encoding="utf-8", index_col=False)
     return encoded_users
+
 
 def get_model(path):
     if not exists(path):
@@ -490,7 +490,6 @@ def get_model(path):
 
 
 def train_model_rf(books, users, ratings):
-
     logging.info("Encoding Books")
     encoded_books = hot_encode_books(books)
 
@@ -519,15 +518,16 @@ def train_model_rf_encoded(encoded_books, encoded_users, ratings):
     logging.info("Creating new model")
 
     rfc = RandomForestClassifier(
-            n_estimators=n_estimators,
-            min_weight_fraction_leaf=0,
-            n_jobs=n_jobs,
-            random_state=int(random_state) if random_state else None,
-            verbose=verbose)
+        n_estimators=n_estimators,
+        min_weight_fraction_leaf=0,
+        n_jobs=n_jobs,
+        random_state=int(random_state) if random_state else None,
+        verbose=verbose)
 
     # train model
     logging.info("Training model")
     return rfc.fit(X, Y)
+
 
 def dump_object(path, obj):
     # Save the object to a file
@@ -549,12 +549,12 @@ def create_user(user_id, age=None, city=None, state=None, country=None):
     }])
     return user
 
+
 def recommend_items_rf(rfc,
                        norm_books, norm_users, norm_ratings,
                        age, country,
                        user_id=None, state=None, city=None, item_id=None,
                        numberOfItems=10):
-
 
     # drop unused isbn column
     # if 'isbn' in norm_books.columns:
