@@ -146,7 +146,7 @@ class UserRecommendations(Resource):
     def post(self):
         args = self.user_rec_args.parse_args()
         app.logger.info(f'UserRecommendations run prediction for ', args["userId"])
-        user = norm_users[norm_users["user_id"] == args["userId"]]
+        user = norm_users[norm_users["user_id"] == args["userId"]].iloc[0]
         recommendations = recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, user_id = user.user_id, age = user.age, country = user.country, numberOfItems=args.recommendationCount)
         app.logger.info('Predictions', recommendations)
         json_str = recommendations.to_json(orient='records')
