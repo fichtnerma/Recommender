@@ -9,6 +9,14 @@ Recommending Books à la Netflix.
 make run logs
 ```
 
+Change the configuration for the random forest in the `docker-compose.yml` file.
+```text
+# number of decision trees to build
+RF_ESTIMATORS=10
+# number of cpu cores to assign for training
+RF_JOBS=3
+```
+
 Access the Frontend on `http://localhost:3000`.
 
 Access the Backend on `http://localhost:4000`.
