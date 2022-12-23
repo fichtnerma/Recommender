@@ -267,7 +267,16 @@ class RecommendItems(Resource):
             rated_books = ratings[ratings["user_id"] == userId]["isbn13"].tolist()
             for book in rated_books:
                 cbf_recommendations.append(cbf.recommend_tf_idf(book, 3))
-        if age and country and state and city:
+
+        if age and country:
+
+            user = create_user(userId, age=age, country=args.locationCountry)
+            recommendations = recommend_items_rf(rfc, norm_books, norm_users, norm_ratings,
+                                                 age = args.age, country = args.locationCountry, user_id = args.userId,
+                                                 state = args.locationState, city = args.locationCity,
+                                                 # item_id = args.itemId,
+                                                 numberOfItems = args.numberOfItems)
+
             rf_recommendations = rf_recommendations.concat([rf_recommendations, cbf.recommend_tf_idf(isbn13, nItems)])
 
         rec_cbf = []
@@ -280,6 +289,7 @@ class RecommendItems(Resource):
         # TODO: parse to string array
         json_str = books_with_mean_count.sample(n=args["numberOfItems"]).to_json(orient='records')
         parsed = json.loads(json_str)
+
         return parsed
 
 

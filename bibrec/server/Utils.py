@@ -539,7 +539,7 @@ def read_object(path):
     with open(path, "rb") as file:
         return pickle.load(file)
 
-def create_user(user_id, age, city, state, country):
+def create_user(user_id, age=None, city=None, state=None, country=None):
     user = pd.DataFrame([{
         'user_id': user_id,
         'age': age,
