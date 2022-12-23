@@ -4,15 +4,13 @@ Recommending Books à la Netflix.
 
 ## Build
 ```sh
-cd bibrec/
-# build containers
-docker-compose up -d --build
+# start the container and show logs
+make run logs
 ```
 
 ## Documentation
 
 ### Jupyter Notebooks
-
 - [Data Exploration](data-exploration.ipynb): Explore the Dataset
 - [Data Normalization](data-normalization.ipynb): Showcase Data Normalization
 - [Data Hot-Encoding](data-hot-encoding.ipynb): Export Hot-Encoded Dataset
@@ -20,7 +18,6 @@ docker-compose up -d --build
 - [Random Forest Model](rf-model.ipynb): Evaluation of Random Forest Algorithm
 
 ### Scripts
-
 - [Train RF Model FULL](bibrec/server/train-rf-model-full.py): Normalize, hot-encode and train with all data from scratch
 - [Train RF Model Lightweight](bibrec/server/train-rf-model.py): Uses pre-hot-encoded files and trains with all data
 
