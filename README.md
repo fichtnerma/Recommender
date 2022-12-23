@@ -11,8 +11,8 @@ make run logs
 ## Documentation
 
 ### Jupyter Notebooks
-- [Data Exploration](data-exploration.ipynb): Explore the Dataset
-- [Data Normalization](data-normalization.ipynb): Showcase Data Normalization
+- [Data Exploration](data-exploration.ipynb): Exploration of the original BookCrossing Dataset
+- [Data Normalization](data-normalization.ipynb): Showcase of the Data Normalization
 - [Data Hot-Encoding](data-hot-encoding.ipynb): Export Hot-Encoded Dataset
 - [Baseline Most Popular](baseline.ipynb): Showcase Baseline with Best Rated Books Algorithm
 - [Random Forest Model](rf-model.ipynb): Evaluation of Random Forest Algorithm
