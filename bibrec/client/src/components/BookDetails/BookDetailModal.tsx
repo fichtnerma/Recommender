@@ -37,7 +37,7 @@ export default function BookDetailModal(props: BookDetailModelProps) {
 	function getSimilarBooks(isbn10: string) {
 		try {
 			axios.post("http://localhost:4000/similarBooks", {
-				userId: user?.id,
+				userId: user?.user_id,
 				isbn10,
 				recommendationCount: 5
 			}).then((res) => {
@@ -59,7 +59,7 @@ export default function BookDetailModal(props: BookDetailModelProps) {
 			try {
 				if (!user) return;
 				axios.post("http://localhost:4000/ratings", {
-					userId: user.id,
+					userId: user.user_id,
 					isbn10: selectedBook.isbn,
 					rating: selectedRating
 				}).then(() => {
@@ -68,10 +68,9 @@ export default function BookDetailModal(props: BookDetailModelProps) {
 					const updatedMean = (rating_count * rating_mean + 1 * selectedRating) / (rating_count + 1);
 					setSelectedBook({ ...selectedBook, rating_count: updatedCount, rating_mean: updatedMean });
 				}).then(() => {
-					axios.get("http://localhost:4000/ratings", { params: { userId: user.id } })
+					axios.get("http://localhost:4000/ratings", { params: { userId: user.user_id } })
 						.then((res) => {
 							setUserRatings(res.data);
-							console.log(res.data);
 						});
 				});
 
@@ -82,19 +81,21 @@ export default function BookDetailModal(props: BookDetailModelProps) {
 		}
 	}
 
+	const userRating = userRatings.find(rating => rating.isbn === selectedBook.isbn);
+
 	return (
 		<div className="modalBackground">
 			<div className="detailModal">
 				<div className={"closeIcon"} onClick={() => onClose(false)}/>
 				<BookDetails selectedBook={selectedBook} user={user} onRate={onRate}
-							 userRating={userRatings.find(rating => rating.isbn === selectedBook.isbn)}/>
+							 userRating={userRating || undefined}/>
 				<div>
 					<h2>Diese Bücher könnten dir auch gefallen</h2>
 
 					{similarBooks?.length
 						? <BookRow books={similarBooks} onItemClick={(book) => {
 							setSelectedBook(book);
-							setSimilarBooks([])
+							setSimilarBooks([]);
 							getSimilarBooks(book.isbn);
 						}}/>
 						: <LoadingIndicator/>

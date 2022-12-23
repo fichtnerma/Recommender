@@ -4,15 +4,21 @@ import "./Login.scss";
 import axios from "axios";
 
 interface LoginProps {
+	user?: User;
 	setUser: Dispatch<SetStateAction<User>>;
 	close: () => void;
 }
 
 export default function Login(props: LoginProps) {
-	const { close, setUser } = props;
+	const { close, setUser, user } = props;
 
 	const [userName, setUserName] = useState("");
-	const [userInfo, setUserInfo] = useState<UserInfo | undefined>(undefined);
+	const [userInfo, setUserInfo] = useState<UserInfo | undefined>(user ? {
+		country: user.country,
+		state: user.state,
+		city: user.city,
+		age: user.age
+	} : undefined);
 	const [part, setPart] = useState(1);
 
 	async function nextPart() {
@@ -20,19 +26,37 @@ export default function Login(props: LoginProps) {
 			const res = await axios.post("http://localhost:4000/registerUser", {
 				username: userName
 			});
-			const { userId } = res.data;
+			const { user_id, city, country, state, age } = res.data as User;
+
+			console.log(res.data);
 
 			const user: User = {
-				id: userId,
-				username: userName
+				user_id: user_id,
+				username: userName,
+				country,
+				state,
+				city,
+				age
 			};
+
 			setUser(user);
-			sessionStorage.setItem("userId", user.id.toString());
+			setUserInfo({
+				country,
+				state,
+				city,
+				age
+			});
+
+			sessionStorage.setItem("user_id", user.user_id.toString());
 			sessionStorage.setItem("username", user.username);
+			country && sessionStorage.setItem("country", country);
+			state && sessionStorage.setItem("state", state);
+			city && sessionStorage.setItem("city", city);
+			age && sessionStorage.setItem("age", age.toString());
 
 			setPart(2);
 		} catch (e) {
-			console.error(e)
+			console.error(e);
 		}
 
 	}
@@ -52,7 +76,7 @@ export default function Login(props: LoginProps) {
 			});
 
 		} catch (e) {
-			console.error(e)
+			console.error(e);
 		}
 
 		close();
@@ -108,6 +132,7 @@ export default function Login(props: LoginProps) {
 							type="select"
 							name="country"
 							placeholder="Gib das Land in dem du wohnst ein"
+							value={userInfo?.country || ""}
 							onChange={(e) => setUserInfo({ ...userInfo, country: e.target.value })}
 						/>
 
@@ -119,6 +144,7 @@ export default function Login(props: LoginProps) {
 							type="select"
 							name="state"
 							placeholder="Gib das Bundesland in dem du wohnst ein"
+							value={userInfo?.state || ""}
 							onChange={(e) => setUserInfo({ ...userInfo, state: e.target.value })}
 						/>
 
@@ -130,6 +156,7 @@ export default function Login(props: LoginProps) {
 							type="select"
 							name="city"
 							placeholder="Gib die Stadt in der du wohnst ein"
+							value={userInfo?.city || ""}
 							onChange={(e) => setUserInfo({ ...userInfo, city: e.target.value })}
 						/>
 
@@ -141,6 +168,7 @@ export default function Login(props: LoginProps) {
 							type="text"
 							name="age"
 							placeholder="Gib dein Alter ein"
+							value={userInfo?.age || ""}
 							onChange={(e) => setUserInfo({ ...userInfo, age: Number(e.target.value) })}
 						/>
 					</div>

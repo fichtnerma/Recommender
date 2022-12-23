@@ -1,15 +1,14 @@
 import logging
+import os
 import pickle
 from os.path import exists
 
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-
 
 # ENV VARS
-DATA_DIR = "./data"       # for docker
+DATA_DIR = "./data"  # for docker
 # DATA_DIR = "../../data"   # for local testing
 BOOKS_CSV = "%s/BX-Books.csv" % DATA_DIR
 USERS_CSV = "%s/BX-Users.csv" % DATA_DIR
@@ -20,6 +19,13 @@ NORMALIZED_RATINGS_CSV = '%s/normalized_ratings.csv' % DATA_DIR
 ENCODED_BOOKS_CSV = "%s/encoded_books.csv" % DATA_DIR
 ENCODED_USERS_CSV = "%s/encoded_users.csv" % DATA_DIR
 MODEL_FILE_PKL = "%s/rf-model.pkl" % DATA_DIR
+
+# Env vars
+n_estimators = int(os.environ.get("RF_ESTIMATORS", 100))
+n_jobs = int(os.environ.get("RF_JOBS", 3))
+random_state = os.environ.get("RF_RANDOM_STATE", None)
+verbose = int(os.environ.get("RF_VERBOSE", 10))
+
 
 def prepare_string(string):
     return str(string).strip().lower().replace('-', '_')
@@ -389,11 +395,11 @@ def get_normalized_data(books_path=NORMALIZED_BOOKS_CSV,
     users = pd.read_csv(users_path, sep=",", encoding="utf-8", na_filter=False)
     ratings = pd.read_csv(ratings_path, sep=",", encoding="utf-8", na_filter=False)
 
-    if 'isbn' in books.columns:
-        books = books.drop(["isbn"], axis=1)
+    # if 'isbn' in books.columns:
+    #     books = books.drop(["isbn"], axis=1)
 
-    if 'isbn' in ratings.columns:
-        ratings = ratings.drop(["isbn"], axis=1)
+    # if 'isbn' in ratings.columns:
+    #     ratings = ratings.drop(["isbn"], axis=1)
 
     # init global vars and ensure all normalized columns are loaded
     init_top_publisher(books, top_n=1000)
@@ -418,7 +424,6 @@ def normalize_data(books, users, ratings):
     ratings = get_explicit_ratings(ratings)
     ratings = normalize_ratings_for_user(ratings, users)
     return books, users, ratings
-
 
 
 def export_normalized_data(norm_books, norm_users, norm_ratings):
@@ -459,17 +464,20 @@ def hot_encode_users(users):
     users = hot_encode_state(users)
     return users
 
+
 def get_encoded_books(path=ENCODED_BOOKS_CSV):
     if not exists(path):
         raise Exception("Encoded Books does not exist", path)
     encoded_books = pd.read_csv(path, sep=",", encoding="utf-8", index_col=False)
     return encoded_books
 
+
 def get_encoded_users(path=ENCODED_USERS_CSV):
     if not exists(path):
         raise Exception("Encoded Users does not exist", path)
     encoded_users = pd.read_csv(path, sep=",", encoding="utf-8", index_col=False)
     return encoded_users
+
 
 def get_model(path):
     if not exists(path):
@@ -482,7 +490,6 @@ def get_model(path):
 
 
 def train_model_rf(books, users, ratings):
-
     logging.info("Encoding Books")
     encoded_books = hot_encode_books(books)
 
@@ -508,13 +515,19 @@ def train_model_rf_encoded(encoded_books, encoded_users, ratings):
     Y = df['book_rating']
 
     logging.info("Training new model:")
-    # TODO: remove random_state
     logging.info("Creating new model")
-    rfc = RandomForestClassifier(n_estimators=100, min_weight_fraction_leaf=0, n_jobs=3, random_state=1, verbose=10)
+
+    rfc = RandomForestClassifier(
+        n_estimators=n_estimators,
+        min_weight_fraction_leaf=0,
+        n_jobs=n_jobs,
+        random_state=int(random_state) if random_state else None,
+        verbose=verbose)
 
     # train model
     logging.info("Training model")
     return rfc.fit(X, Y)
+
 
 def dump_object(path, obj):
     # Save the object to a file
@@ -526,7 +539,8 @@ def read_object(path):
     with open(path, "rb") as file:
         return pickle.load(file)
 
-def create_user(user_id, age, city, state, country):
+
+def create_user(user_id, age=None, city=None, state=None, country=None):
     user = pd.DataFrame([{
         'user_id': user_id,
         'age': age,
@@ -536,18 +550,17 @@ def create_user(user_id, age, city, state, country):
     }])
     return user
 
+
 def recommend_items_rf(rfc,
                        norm_books, norm_users, norm_ratings,
                        age, country,
                        user_id=None, state=None, city=None, item_id=None,
                        numberOfItems=10):
-
     # drop unused isbn column
-    if 'isbn' in norm_books.columns:
-        norm_books = norm_books.drop(["isbn"], axis=1)
-
-    if 'isbn' in norm_ratings.columns:
-        norm_ratings = norm_ratings.drop(["isbn"], axis=1)
+    # if 'isbn' in norm_books.columns:
+    #     norm_books = norm_books.drop(["isbn"], axis=1)
+    # if 'isbn' in norm_ratings.columns:
+    #     norm_ratings = norm_ratings.drop(["isbn"], axis=1)
 
     # create user input
     df_user = create_user(user_id, age, city, state, country)
@@ -557,6 +570,14 @@ def recommend_items_rf(rfc,
 
     # prepare books input
     encoded_books = get_encoded_books()
+
+    if user_id is not None:
+        users_ratings = norm_ratings[norm_ratings["user_id"] == user_id]
+        rated_book_ids = users_ratings['isbn13'].tolist()
+
+        # filter already rated books from the user
+        filtered = encoded_books[~encoded_books['isbn13'].isin(rated_book_ids)]
+        encoded_books = filtered
 
     df_user = df_user.filter(regex="age|country_|state_", axis=1)
     df_books = encoded_books.filter(regex="isbn13|normalized_year_of_publication|publisher_", axis=1)
@@ -590,7 +611,8 @@ def flatten(l):
 # encoded_books = get_encoded_books()
 # encoded_users = get_encoded_users()
 # rfc = train_model_rf_encoded(encoded_books, encoded_users, norm_ratings)
-# print(recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, age=20, locationCountry="USA"))
+# print(recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, age=20, country="USA"))
+# print(recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, user_id=276725, age=20, country="USA"))
 
 # run to normalize books and export to file
 # books = get_books()

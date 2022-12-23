@@ -12,14 +12,21 @@ app = Flask(__name__)
 api = Api(app)
 app.logger.setLevel(logging.INFO)
 
+# Env vars
+app.logger.info("ENVIRONMENT")
+app.logger.info(f' RF estimators: {n_estimators}')
+app.logger.info(f' RF Jobs: {n_jobs}')
+app.logger.info(f' RF random_state: {random_state}')
+app.logger.info(f' RF verbose: {verbose}')
+
 app.logger.info("INITIALIZING")
 
 users_dict = defaultdict(list)
 users_ratings = pd.DataFrame(columns=["user_id", "isbn", "book_rating"])
-books = []
-users = []
-ratings = []
-books_with_mean_count = []
+# books = []
+# users = []
+# ratings = []
+# books_with_mean_count = []
 
 # get data
 app.logger.info("Reading data")
@@ -33,12 +40,12 @@ norm_books, norm_users, norm_ratings = get_normalized_data()
 
 # todo
 app.logger.info("Read editions")
-bookData = pd.read_csv("./data/editions_dump.csv", sep=",", encoding="utf-8")
+book_data = pd.read_csv("./data/editions_dump.csv", sep=",", encoding="utf-8")
 books_with_mean_count = add_book_rating_mean_and_count(books, ratings)
 
 # models
 app.logger.info("ContentBasedFiltering")
-cbf = ContentBasedFiltering(books_with_mean_count, bookData)
+cbf = ContentBasedFiltering(books_with_mean_count, book_data)
 
 # random forest
 if exists(MODEL_FILE_PKL):
@@ -56,6 +63,7 @@ else:
 
 app.logger.info("INITIALIZING DONE")
 
+
 # Register User
 class RegisterUser(Resource):
     register_user_args = reqparse.RequestParser()
@@ -67,28 +75,37 @@ class RegisterUser(Resource):
 
     def post(self):
         args = self.register_user_args.parse_args()
+        country = args["country"]
+        state = args["state"]
+        city = args["city"]
+        age = args["age"]
 
         # check if user already exist
         for uid, user_info in users_dict.items():
             if user_info["username"] == args["username"]:
                 # update user info if new info us submitted
-                user_info["country"] = args["country"]
-                user_info["state"] = args["state"]
-                user_info["city"] = args["city"]
-                user_info["age"] = args["age"]
+                if country:
+                    user_info["country"] = country
+                if state:
+                    user_info["state"] = state
+                if city:
+                    user_info["city"] = city
+                if age:
+                    user_info["age"] = age
 
-                # create return dict
-                temp_user = user_info.copy()
-                temp_user["userId"] = uid
+                user_info["user_id"] = uid
 
+                app.logger.info(user_info)
+                app.logger.info(users_dict)
                 app.logger.info(f'User „{user_info["username"]}“ logged in')
-                return temp_user
+                return user_info
 
         # add a new user
         user_id = random.getrandbits(32)
         user_info = args.copy()
+        app.logger.info(user_info)
         users_dict[user_id] = user_info
-        args["userId"] = user_id
+        args["user_id"] = user_id
 
         app.logger.info(f'New user named „{user_info["username"]}“ registered')
         return args
@@ -130,10 +147,33 @@ class UserRecommendations(Resource):
     user_rec_args.add_argument("recommendationCount", type=int, help="The amount of recommendations", default=25)
 
     def post(self):
+        global norm_ratings
         args = self.user_rec_args.parse_args()
-        app.logger.info(f'UserRecommendations run prediction for ', args.userId)
-        user = users[users["user_id"] == args.userId]
-        recommendations = recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, user_id = user.userId, age = user.age, country = user.country, numberOfItems=args.recommendationCount)
+        app.logger.info(f'UserRecommendations run prediction for {args["userId"]}')
+
+        user_id = args["userId"]
+        user = users_dict.get(user_id)
+        if user is not None:
+            # user = users_dict[user_id]
+            app.logger.info("--------- USER -----------", user)
+            age = user["age"]
+            country = user["country"]
+        elif len(norm_users[norm_users["user_id"] == args["userId"]]) == 1:
+            user = norm_users[norm_users["user_id"] == args["userId"]].iloc[0]
+            age = user.age
+            country = user.country
+        else:
+            raise Exception("No user with the specified id found!")
+
+        if len(users_ratings) > 0:
+            user_mean = users_ratings["book_rating"].mean()
+            norm_user_ratings = users_ratings
+            norm_user_ratings["normalized_ratings"] = users_ratings["book_rating"] - user_mean
+            app.logger.info(norm_user_ratings)
+            norm_ratings = pd.concat([norm_ratings, norm_user_ratings])
+
+        recommendations = recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, user_id=user_id, age=age, country=country,
+                                             numberOfItems=args.recommendationCount)
         app.logger.info('Predictions', recommendations)
         json_str = recommendations.to_json(orient='records')
         parsed = json.loads(json_str)
@@ -145,7 +185,7 @@ class TopInCountry(Resource):
     top_in_country_args = reqparse.RequestParser()
     top_in_country_args.add_argument("userId", type=int, help="The id of the current user")
     top_in_country_args.add_argument("timezoneCountry", type=str, help="The language of the user browser", required=True)
-    top_in_country_args.add_argument("recommendationCount", type=int, help="The amount of recommendations", default=25)
+    top_in_country_args.add_argument("recommendationCount", type=int, help="The amount of recommendations", default=25, choices=range(1, 50))
 
     def post(self):
         args = self.top_in_country_args.parse_args()
@@ -202,9 +242,12 @@ class SimilarBooks(Resource):
     similar_Books_args.add_argument("recommendationCount", type=int, help="The amount of recommendations", default=5)
 
     def post(self):
+        global users_ratings
         args = self.similar_Books_args.parse_args()
+        user_id = args["userId"]
         isbn13 = str(convert_isbn(args["isbn10"]))
-        similar_books = cbf.recommend_tf_idf(isbn13, args["recommendationCount"] + 1)
+        # double the number of items to make sure that always the desired amount of items is returned even if all first n books are already rated
+        similar_books = cbf.recommend_tf_idf(isbn13, args["recommendationCount"] * 2)
 
         # return sample of most popular if no similar items are found
         if similar_books is None:
@@ -220,6 +263,16 @@ class SimilarBooks(Resource):
         # filter sent book out of the similar items if present
         mask = similar_books["isbn"] != args["isbn10"]
         similar_books = similar_books[mask]
+
+        merged_ratings = pd.concat([ratings, users_ratings])
+
+        # filter already rated books from the user
+        if user_id is not None:
+            users_ratings = merged_ratings[merged_ratings["user_id"] == user_id]
+            rated_book_ids = users_ratings['isbn'].tolist()
+
+            similar_books = similar_books[~similar_books['isbn'].isin(rated_book_ids)]
+
         similar_books = similar_books[:args["recommendationCount"]]
 
         app.logger.info("Sent isbn: " + args["isbn10"])
@@ -260,7 +313,15 @@ class RecommendItems(Resource):
             rated_books = ratings[ratings["user_id"] == userId]["isbn13"].tolist()
             for book in rated_books:
                 cbf_recommendations.append(cbf.recommend_tf_idf(book, 3))
-        if age and country and state and city:
+
+        if age and country:
+            user = create_user(userId, age=age, country=args.locationCountry)
+            recommendations = recommend_items_rf(rfc, norm_books, norm_users, norm_ratings,
+                                                 age=args.age, country=args.locationCountry, user_id=args.userId,
+                                                 state=args.locationState, city=args.locationCity,
+                                                 # item_id = args.itemId,
+                                                 numberOfItems=args.numberOfItems)
+
             rf_recommendations = rf_recommendations.concat([rf_recommendations, cbf.recommend_tf_idf(isbn13, nItems)])
 
         rec_cbf = []
@@ -273,29 +334,28 @@ class RecommendItems(Resource):
         # TODO: parse to string array
         json_str = books_with_mean_count.sample(n=args["numberOfItems"]).to_json(orient='records')
         parsed = json.loads(json_str)
+
         return parsed
 
 
 # Evaluation API
 class RecommendItemsRF(Resource):
     args = reqparse.RequestParser()
-    args.add_argument("userId", type=int, help="The id of the current user")
-    args.add_argument("age", type=int, help="The age of the user", required=True)
-    args.add_argument("locationCountry", type=str, help="The Country of the user", required=True)
-    args.add_argument("locationState", type=str, help="The State of the user")
-    args.add_argument("locationCity", type=str, help="The City of the user")
-    args.add_argument("itemId", type=int, help="The ID of the book (isbn10)")
-    args.add_argument("numberOfItems", type=int, help="Number of recommendations to provide", default=10)
+    args.add_argument("userId", type=int, help="The id of the current user", location="args")
+    args.add_argument("age", type=int, help="The age of the user", required=True, location="args")
+    args.add_argument("locationCountry", type=str, help="The Country of the user", required=True, location="args")
+    args.add_argument("locationState", type=str, help="The State of the user", location="args")
+    args.add_argument("locationCity", type=str, help="The City of the user", location="args")
+    args.add_argument("itemId", type=int, help="The ID of the book (isbn10)", location="args")
+    args.add_argument("numberOfItems", type=int, help="Number of recommendations to provide", default=10, location="args")
 
-    def post(self):
+    def get(self):
         args = self.args.parse_args()
         app.logger.info(f'RecommendItemsRF run prediction')
-
         df_user = create_user(args.userId, args.age, args.locationCity, args.locationState, args.locationCountry)
         logging.info("USER", df_user)
-
-        recommendations = recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, age = args.age, country = args.locationCountry, user_id = args.userId, state = args.locationState, city = args.locationCity, item_id = args.itemId, numberOfItems = args.numberOfItems)
-        recommendations = recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, age=20, country="USA")
+        recommendations = recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, age=args.age, country=args.locationCountry, user_id=args.userId, state=args.locationState,
+                                             city=args.locationCity, item_id=args.itemId, numberOfItems=args.numberOfItems)
         app.logger.info('Predictions', recommendations)
         json_str = recommendations.to_json(orient='records')
         parsed = json.loads(json_str)
@@ -308,6 +368,7 @@ def after_request(response):
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
     return response
+
 
 # Frontend APIs
 api.add_resource(RegisterUser, "/registerUser")

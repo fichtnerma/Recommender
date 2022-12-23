@@ -16,10 +16,10 @@ type RatingProps = {
 
 export default function RatingStars({ rating, canRate, user, onRate }: RatingProps) {
 	const maxRating = 10;
-	const [currentRating, setCurrentRating] = useState(rating);
+	const [currentRating, setCurrentRating] = useState(rating || 0);
 
 	useEffect(() => {
-		rating && setCurrentRating(rating);
+		setCurrentRating(rating);
 	}, [rating]);
 
 	const calculatedWidth = `${(1 - currentRating / maxRating) * 100}%`;
