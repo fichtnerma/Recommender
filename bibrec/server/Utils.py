@@ -570,6 +570,12 @@ def recommend_items_rf(rfc,
     # prepare books input
     encoded_books = get_encoded_books()
 
+    # TODO: fix filtering out already rated books
+    # if user_id is not None:
+    #     users_ratings = norm_ratings[norm_ratings["user_id"] == user_id]
+    #     unknown_books = encoded_books[~encoded_books.isbn13.isin(users_ratings.isbn13)]
+    #     encoded_books = unknown_books
+
     df_user = df_user.filter(regex="age|country_|state_", axis=1)
     df_books = encoded_books.filter(regex="isbn13|normalized_year_of_publication|publisher_", axis=1)
 
