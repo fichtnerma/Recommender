@@ -13,18 +13,12 @@ app = Flask(__name__)
 api = Api(app)
 app.logger.setLevel(logging.INFO)
 
-
 # Env vars
 app.logger.info("ENVIRONMENT")
-n_estimators = int(os.environ.get("RF_ESTIMATORS", 100))
-n_jobs = int(os.environ.get("RF_JOBS", 3))
-random_state = os.environ.get("RF_RANDOM_STATE", None)
-verbose = int(os.environ.get("RF_VERBOSE", 10))
-app.logger.info("RF estimators:", n_estimators)
-app.logger.info("RF Jobs:", n_jobs)
-app.logger.info("RF random_state:", random_state)
-app.logger.info("RF verbose:", verbose)
-
+app.logger.info(f' RF estimators: {n_estimators}')
+app.logger.info(f' RF Jobs: {n_jobs}')
+app.logger.info(f' RF random_state: {random_state}')
+app.logger.info(f' RF verbose: {verbose}')
 
 app.logger.info("INITIALIZING")
 

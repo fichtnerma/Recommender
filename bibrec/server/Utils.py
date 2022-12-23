@@ -609,7 +609,8 @@ def flatten(l):
 # encoded_books = get_encoded_books()
 # encoded_users = get_encoded_users()
 # rfc = train_model_rf_encoded(encoded_books, encoded_users, norm_ratings)
-# print(recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, age=20, locationCountry="USA"))
+# print(recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, age=20, country="USA"))
+# print(recommend_items_rf(rfc, norm_books, norm_users, norm_ratings, user_id=276725, age=20, country="USA"))
 
 # run to normalize books and export to file
 # books = get_books()
