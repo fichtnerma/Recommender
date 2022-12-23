@@ -26,7 +26,7 @@ MODEL_FILE_PKL = "%s/rf-model.pkl" % DATA_DIR
 # Env vars
 n_estimators = int(os.environ.get("RF_ESTIMATORS", 100))
 n_jobs = int(os.environ.get("RF_JOBS", 3))
-random_state = int(os.environ.get("RF_RANDOM_STATE", None))
+random_state = os.environ.get("RF_RANDOM_STATE", None)
 verbose = int(os.environ.get("RF_VERBOSE", 10))
 
 def prepare_string(string):
@@ -517,11 +517,12 @@ def train_model_rf_encoded(encoded_books, encoded_users, ratings):
 
     logging.info("Training new model:")
     logging.info("Creating new model")
+
     rfc = RandomForestClassifier(
             n_estimators=n_estimators,
             min_weight_fraction_leaf=0,
             n_jobs=n_jobs,
-            random_state=random_state,
+            random_state=int(random_state) if random_state else None,
             verbose=verbose)
 
     # train model
