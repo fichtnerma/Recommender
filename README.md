@@ -1,4 +1,5 @@
 # BibRec
+__Team 1__: Fabian Untermoser, Johannes Munker, Markus Fichtner
 
 Recommending Books à la Netflix.
 
@@ -7,6 +8,10 @@ Recommending Books à la Netflix.
 # start the container and show logs
 make run logs
 ```
+
+__Prerequisites__:
+- Docker Compose
+- Around 13GB of free RAM
 
 ## Documentation
 This project is a recommendation system for books.
