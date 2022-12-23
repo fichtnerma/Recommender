@@ -284,20 +284,23 @@ def init_top_publisher(books, top_n=20):
     return top_publisher
 
 
+def sanitize_strings(col):
+    return list(map(lambda x: str(x).strip().lower().replace(' ', '_'), col))
+
+
 def get_top_col(df, top_n=20):
     top_col = df.value_counts()[:top_n].index.tolist()
-    top_col = list(map(lambda x: str(x).strip().lower().replace(' ', '_'), top_col))
+    top_col = sanitize_strings(top_col)
     if 'other' not in top_col:
         top_col.append("other")
     return top_col
 
 
-# top_countries = None
 def normalize_country(df):
     global top_countries
     encoded_users = df.copy()
     countries = encoded_users["country"]
-    countries = list(map(lambda x: str(x).strip().lower().replace(' ', '_'), countries))
+    countries = sanitize_strings(countries)
     countries = pd.Categorical(countries, categories=top_countries).fillna("other")
     encoded_users["country"] = countries
     return encoded_users
@@ -307,7 +310,7 @@ def normalize_state(df):
     global top_states
     encoded_users = df.copy()
     states = encoded_users["state"]
-    states = list(map(lambda x: str(x).strip().lower().replace(' ', '_'), states))
+    states = sanitize_strings(states)
     states = pd.Categorical(states, categories=top_states).fillna("other")
     encoded_users["state"] = states
     return encoded_users
@@ -317,7 +320,7 @@ def normalize_publisher(df):
     global top_publisher
     encoded_books = df.copy()
     publisher = encoded_books["publisher"]
-    publisher = list(map(lambda x: str(x).strip().lower().replace(' ', '_'), publisher))
+    publisher = sanitize_strings(publisher)
     publisher = pd.Categorical(publisher, categories=top_publisher).fillna("other")
     encoded_books["publisher"] = publisher
     return encoded_books
@@ -458,13 +461,13 @@ def hot_encode_users(users):
 
 def get_encoded_books(path=ENCODED_BOOKS_CSV):
     if not exists(path):
-        raise Exception("Encoded Books does not exist")
+        raise Exception("Encoded Books does not exist", path)
     encoded_books = pd.read_csv(path, sep=",", encoding="utf-8", index_col=False)
     return encoded_books
 
 def get_encoded_users(path=ENCODED_USERS_CSV):
     if not exists(path):
-        raise Exception("Encoded Users does not exist")
+        raise Exception("Encoded Users does not exist", path)
     encoded_users = pd.read_csv(path, sep=",", encoding="utf-8", index_col=False)
     return encoded_users
 
@@ -598,3 +601,14 @@ def flatten(l):
 # print("top countries", get_top_countries())
 # print("top states", get_top_states())
 # print("top publisher", get_top_publisher())
+
+# predict user
+# user = pd.DataFrame([{
+#     'userId': None,
+#     'age': 20,
+#     'city': None,
+#     'state': None,
+#     'country': "usa"
+# }])
+# df_user = user
+# df_user = normalize_country(df_user)
