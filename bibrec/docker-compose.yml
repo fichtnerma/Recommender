@@ -11,6 +11,10 @@ services:
     environment:
       - FLASK_DEBUG=false
       - FLASK_APP=app.py
+      - RF_ESTIMATORS=3
+      - RF_JOBS=3
+      - RF_RANDOM_STATE=1
+      - RF_VERBOSE=10
     expose:
       - 4000
     ports:

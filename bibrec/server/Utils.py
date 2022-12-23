@@ -1,5 +1,6 @@
 import logging
 import pickle
+import os
 from os.path import exists
 
 import numpy as np
@@ -20,6 +21,13 @@ NORMALIZED_RATINGS_CSV = '%s/normalized_ratings.csv' % DATA_DIR
 ENCODED_BOOKS_CSV = "%s/encoded_books.csv" % DATA_DIR
 ENCODED_USERS_CSV = "%s/encoded_users.csv" % DATA_DIR
 MODEL_FILE_PKL = "%s/rf-model.pkl" % DATA_DIR
+
+
+# Env vars
+n_estimators = int(os.environ.get("RF_ESTIMATORS", 100))
+n_jobs = int(os.environ.get("RF_JOBS", 3))
+random_state = int(os.environ.get("RF_RANDOM_STATE", None))
+verbose = int(os.environ.get("RF_VERBOSE", 10))
 
 def prepare_string(string):
     return str(string).strip().lower().replace('-', '_')
@@ -508,9 +516,13 @@ def train_model_rf_encoded(encoded_books, encoded_users, ratings):
     Y = df['book_rating']
 
     logging.info("Training new model:")
-    # TODO: remove random_state
     logging.info("Creating new model")
-    rfc = RandomForestClassifier(n_estimators=100, min_weight_fraction_leaf=0, n_jobs=3, random_state=1, verbose=10)
+    rfc = RandomForestClassifier(
+            n_estimators=n_estimators,
+            min_weight_fraction_leaf=0,
+            n_jobs=n_jobs,
+            random_state=random_state,
+            verbose=verbose)
 
     # train model
     logging.info("Training model")
