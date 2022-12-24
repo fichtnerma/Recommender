@@ -28,8 +28,6 @@ export default function Login(props: LoginProps) {
 			});
 			const { user_id, city, country, state, age } = res.data as User;
 
-			console.log(res.data);
-
 			const user: User = {
 				user_id: user_id,
 				username: userName,

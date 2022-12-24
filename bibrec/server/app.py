@@ -251,7 +251,6 @@ class SimilarBooks(Resource):
         app.logger.info("Sent isbn: " + args["isbn10"])
         app.logger.info("Similar books for isbn: " + isbn13 + " are:")
         app.logger.info(similar_books)
-        similar_books = books_with_mean_count.merge(similar_books, on=['isbn13', 'isbn', 'book_title'], how='inner')
         parsed = similar_books.to_json(orient='records')
         return json.loads(parsed)
 

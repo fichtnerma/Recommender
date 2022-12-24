@@ -641,9 +641,7 @@ def get_similar_books(cbf, books_with_mean_count, ratings, users_ratings, user_i
         mask = most_rated["isbn"] != isbn
         most_rated = most_rated[mask]
         most_rated = most_rated.sort_values('rating_mean', ascending=False)
-        json_str = most_rated.sample(n=number_of_items).to_json(orient='records')
-        parsed = json.loads(json_str)
-        return parsed
+        return most_rated.sample(n=number_of_items)
 
     # filter sent book out of the similar items if present
     mask = similar_books["isbn"] != isbn
@@ -658,4 +656,5 @@ def get_similar_books(cbf, books_with_mean_count, ratings, users_ratings, user_i
 
         similar_books = similar_books[~similar_books['isbn'].isin(rated_book_ids)]
 
-    return similar_books[:number_of_items]
+    similar_books = similar_books[:number_of_items]
+    return books_with_mean_count.merge(similar_books, on=['isbn13', 'isbn', 'book_title'], how='inner')

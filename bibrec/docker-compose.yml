@@ -8,7 +8,6 @@ services:
     volumes:
       - ./bibrec/server:/api/src
       - ./data:/api/src/data
-    env_file: .env
     environment:
       - FLASK_DEBUG=false
       - FLASK_APP=app.py
@@ -24,7 +23,7 @@ services:
     build: ./bibrec/client
     command: npm run dev
     volumes:
-      - bibrec/client:/app
+      - ./bibrec/client:/app
     ports:
       - "3000:3000"
     depends_on:
